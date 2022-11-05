@@ -4,12 +4,14 @@ This library is to support direct calculation the  spin-orbital coupling strengt
 This code is for the system which is not possible or not easy to directly get the ab initio WannierTB with SOC, such as some topological system or systems with strong correlations. For these systems the non-soc calculations is stable and easy to perform, then you can use this code to calculate the SOC strength.
 
 Copyright: Qiangqiang Gu, International Center for Quantum Materials, School of Physics, Peking University. 
-
 Email:     guqq@pku.edu.cn
 
-**
-Note: up to now, this library supports p- and d-orbital which is suitable for most of the materials.
-**
+## feature:
+- calculate the $ab$ $initio$ SOC strength for $p$-and $d$-orbital.
+- output the SOC TB model, with basis defined $| s_z \rangle$ basis.
+- supports for custom local axis for Wannier TB. 
+- support the custom spin quantization axis for  Wannier TB.
+
 
 ### Install: two ways to install
 1. export PYTHONPATH=$PYTHONPATH:/yourpath/TBSOC/lib
