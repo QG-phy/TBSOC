@@ -27,7 +27,7 @@ sys.path.append('/yourpath/TBSOC/lib')
   **Please see the tutorial and run it using jupiter-notebook.**
   
   
-### how to cite:
+### How to cite:
 ```
 @article{gu2022computational,
       title={A computational method to estimate spin-orbital interaction strength in solid state systems}, 
