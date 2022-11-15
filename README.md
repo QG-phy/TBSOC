@@ -28,6 +28,7 @@ sys.path.append('/yourpath/TBSOC/lib')
   
   
 ### how to cite:
+```
 @article{gu2022computational,
       title={A computational method to estimate spin-orbital interaction strength in solid state systems}, 
       author={Qiangqiang Gu and Shishir Kumar Pandey},
@@ -36,3 +37,4 @@ sys.path.append('/yourpath/TBSOC/lib')
       archivePrefix={arXiv},
       primaryClass={cond-mat.mtrl-sci}
 }
+```
