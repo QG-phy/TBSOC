@@ -25,4 +25,14 @@ sys.path.append('/yourpath/TBSOC/lib')
 
 ### How to use:
   **Please see the tutorial and run it using jupiter-notebook.**
-
+  
+  
+### how to cite:
+@article{gu2022computational,
+      title={A computational method to estimate spin-orbital interaction strength in solid state systems}, 
+      author={Qiangqiang Gu and Shishir Kumar Pandey},
+      year={2022},
+      eprint={2211.07256},
+      archivePrefix={arXiv},
+      primaryClass={cond-mat.mtrl-sci}
+}
