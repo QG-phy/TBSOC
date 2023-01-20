@@ -4,26 +4,29 @@ from lm_expand import MapLmSp, MapLpSm, MapLzSz
 from const import Mtrans
 from printmat import printsocmat
 
+LM_Mag_Num_Dict    = {'s':[0], 'p':[-1, 0, 1], 'd':[-2, -1, 0, 1, 2]}
 
-def creat_basis_lm(orb):
-    """Creat |lm,s> stated for orbital."""
-    if orb=='p':
-        basis = []
-        for m in [-1,0,1]:
-            for spin in [1,-1]:
-                basis.append([1,m,spin])
-    if orb=='d':
-        basis = []
-        for m in [-2,-1,0,1,2]:
-            for spin in [1,-1]:
-                basis.append([2,m,spin])
-    if orb=='s':
-        print('we do not consider the soc in s orbital')
-    if orb=='f':
-        print('for now, soc for f orbital is not added.')
-        exit()
+def creat_basis_lm(orb: str):
+    '''It creates a list of  |lm,s> states for orbital, where each list contains the quantum numbers of 
+            a basis state in the form of [l,m,s]
+    
+    Parameters
+    ----------
+    orb
+        the orbital type, 's', 'p', 'd'.  'f' is not suppoted yet.     
+    Returns
+    -------
+        A list of lists. Each list contains the quantum numbers for a single state.
+    
+    '''
+    assert orb in ['s', 'p', 'd'], 'The orb parameter must be one of the s, p ,d values in the format of str'    
+    l_value = ['s', 'p', 'd'].index(orb)
+    mlist = LM_Mag_Num_Dict[orb]
+    basis = []
+    for m in mlist:
+        for spin in [1,-1]:
+            basis.append([l_value, m, spin])
     return basis
-
 
 def get_matrix_lmbasis(basis):
     """Creat Hsoc matrix  in |lm,s> basis."""
@@ -62,13 +65,14 @@ def trans_lm_spatial(orb,Msoc):
 def soc_order(orb,Msoc):
     """Transfer the spin basis form up down up down ... to up up ... down down..."""
     print('transfer the spin basis form up down up down ... to up up ... down down...')
-    if orb=='p':
+    if orb == 's':
+        norbs =1
+    elif orb=='p':
         norbs=3
     elif orb=='d':
         norbs=5
     else:
-        print('can not recognize the orbital !')
-        exit()
+        raise ValueError('can not recognize the orbital !')
     Mattmp = np.zeros([2*norbs,2*norbs],dtype=complex)
     Mattmp[0    :  norbs,    0:  norbs] = Msoc[0:2*norbs:2,0:2*norbs:2]
     Mattmp[norbs:2*norbs,norbs:2*norbs] = Msoc[1:2*norbs:2,1:2*norbs:2]
@@ -77,11 +81,10 @@ def soc_order(orb,Msoc):
     return Mattmp
 
 
-def get_mat_soc_orb(orb):
+def get_mat_soc_orb(orb: str):
     """Get soc matrix."""
-    if orb != 'p' and orb != 'd':
-        print("orbtial is wrong, can be eitgher 'p' or 'd' ")
-        exit()
+    assert orb in ['s', 'p', 'd'], 'The orb parameter must be one of the s, p ,d values in the format of str'    
+
     basis = creat_basis_lm(orb)
     LdotS = get_matrix_lmbasis(basis)
     LdoS_spatial_udud = trans_lm_spatial(orb,LdotS)
@@ -94,8 +97,7 @@ def get_mat_soc_orb(orb):
 def get_Hsoc(lambdas,orbitals,orb_type,orb_num,Msoc):
     """Get Hsoc."""
     if len(lambdas) != len(np.unique(orb_type)):
-        print("Number of parameters for soc strength is wrong!")
-        exit()
+        raise ValueError("Number of parameters for soc strength is wrong!")
 
     num_wan = 2*np.sum(orb_num)
     tot_orb = np.sum(orb_num)
