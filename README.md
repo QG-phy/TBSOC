@@ -3,7 +3,7 @@ This library is to support direct calculation the  spin-orbital coupling strengt
 
 This code is for the system which is not possible or not easy to directly get the ab initio WannierTB with SOC, such as some topological system or systems with strong correlations. For these systems the non-soc calculations is stable and easy to perform, then you can use this code to calculate the SOC strength.
 
-Copyright: Qiangqiang Gu, International Center for Quantum Materials, School of Physics, Peking University. 
+Copyright: Qiangqiang Gu,  Peking University. 
 
 Email:     guqq@pku.edu.cn
 
