@@ -29,12 +29,15 @@ sys.path.append('/yourpath/TBSOC/lib')
   
 ### How to cite:
 ```
-@article{gu2022computational,
-      title={A computational method to estimate spin-orbital interaction strength in solid state systems}, 
-      author={Qiangqiang Gu and Shishir Kumar Pandey},
-      year={2022},
-      eprint={2211.07256},
-      archivePrefix={arXiv},
-      primaryClass={cond-mat.mtrl-sci}
+@article{GU2023112090,
+title = {A computational method to estimate spin–orbital interaction strength in solid state systems},
+journal = {Computational Materials Science},
+volume = {221},
+pages = {112090},
+year = {2023},
+issn = {0927-0256},
+doi = {https://doi.org/10.1016/j.commatsci.2023.112090},
+url = {https://www.sciencedirect.com/science/article/pii/S0927025623000848},
+author = {Qiangqiang Gu and Shishir Kumar Pandey and Rajarshi Tiwari}
 }
 ```
