@@ -1,10 +1,8 @@
 # TBSOC (former name Wannier_Add_onsite_SOC)
-This library is to support direct calculation the  spin-orbital coupling strength in materials and used for on site matrix for Wannier TB models.
 
-This code is for the system which is not possible or not easy to directly get the ab initio WannierTB with SOC, such as some topological system or systems with strong correlations. For these systems the non-soc calculations is stable and easy to perform, then you can use this code to calculate the SOC strength.
+Spin–orbit coupling (SOC) drives interesting and non-trivial phenomena in solid-state physics, ranging from topological to magnetic to transport properties. A thorough study of such phenomena often requires effective models where the SOC term is explicitly included. However, the estimation of SOC strength for such models mostly depends on the spectroscopy experiments which can only provide a rough estimate. In this work, we provide a simple yet effective computational approach to estimate the onsite SOC strength using a combination of the ab initio and tight-binding calculations. We demonstrate the wider applicability and high sensitivity of our method by estimating SOC strength of materials with varying SOC strengths and the number of SOC active ions. As examples, we consider strongly correlated, topological, and semiconducting materials. We show that the estimated strengths agree well with the proposed values in the literature lending support to our methodology. This simplistic approach can readily be applied to a wide range of materials.
 
 Copyright: Qiangqiang Gu,  Peking University. 
-
 Email:     guqq@pku.edu.cn
 
 ## Features:
