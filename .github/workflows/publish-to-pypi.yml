@@ -27,4 +27,5 @@ jobs:
       run: python -m build
     - name: Publish to PyPI
       run: |
+        echo ${PYPI_API_TOKEN}
         twine upload --verbose dist/*
