@@ -35,7 +35,9 @@ pip install .
 ```
 #### 2. From Pypi or Conda
 
-Will be available soon.
+```
+pip install tbsoc
+```
 
 
 ### How to use:
