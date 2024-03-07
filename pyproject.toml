@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tbsoc"
-version = "1.0.0"
+version = "2.0.0"
 license = "LGPL-3.0"
 description = "A computational method to estimate spin-orbital interaction strength in solid state systems"
 authors = ["Q. Gu <guqq@pku.edu.cn>"]
@@ -32,7 +32,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 
 [tool.poetry-dynamic-versioning]
-enable = false
+enable = true
 vcs = "git"
 strict = true
 format-jinja = """
