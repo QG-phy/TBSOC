@@ -26,4 +26,4 @@ jobs:
       run: python -m build
     - name: Publish to PyPI
       run: |
-        twine upload dist/*
+        twine upload --verbose dist/*
