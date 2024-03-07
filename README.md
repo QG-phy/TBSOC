@@ -17,7 +17,14 @@ You may also contact Shishir Kumar Pandey : shishir.kr.pandey@gmail.com
 
 ### Install: 
 
-#### 1. From Source
+
+#### 1. From Pypi or Conda
+```
+pip install tbsoc
+```
+
+#### 2. From Source
+
 If you are installing from source, you will need:
 - Python 3.8 or later
 - numpy
@@ -25,19 +32,13 @@ If you are installing from source, you will need:
 - matplotlib
 - scipy
 - pytest
-
+ 
 First clone or download the source code from the website. Then, located in the repository root and running
-
-
 ```
 cd path/tbsoc
 pip install .
 ```
-#### 2. From Pypi or Conda
 
-```
-pip install tbsoc
-```
 
 
 ### How to use:
