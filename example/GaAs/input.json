@@ -8,5 +8,7 @@
     "outdir":"./",
     "EMIN":-14,
     "EMAX":10,
-    "Efermi":4.081500
+    "Efermi":4.081500,
+    "fit_emin": -8.0,
+    "fit_emax": 8.0
 }
