@@ -1,0 +1,6 @@
+num_wann = 4
+num_bands = 8
+
+begin projections
+Si:l=0;l=1
+end projections

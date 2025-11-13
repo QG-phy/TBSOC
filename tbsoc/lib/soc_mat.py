@@ -34,7 +34,6 @@ def get_matrix_lmbasis(basis):
     MatLpSm = np.zeros([ndim,ndim])
     MatLmSp = np.zeros([ndim,ndim])
     MatLzSz = np.zeros([ndim,ndim])
-    LdotS = np.zeros([ndim,ndim])
     for i in range(len(basis)):
         raw = i
         cof,bas = MapLpSm(basis[i])
@@ -51,14 +50,14 @@ def get_matrix_lmbasis(basis):
         if bas in basis:
             col = basis.index(bas)
             MatLzSz[raw,col] = cof
-    LdotS = np.mat(0.5*(MatLpSm + MatLmSp + MatLzSz))
+    LdotS = 0.5*(MatLpSm + MatLmSp + MatLzSz)
     return LdotS
 
 
 def trans_lm_spatial(orb,Msoc):
     """Transform Hsoc matrix  in |lm,s> basis to px py pz or dxy,dyz ... basis."""
-    trans = np.mat(np.kron(Mtrans[orb],np.eye(2))).T
-    Msoc_spatial = np.dot(np.dot(trans.H,Msoc),trans)
+    trans = np.array(np.kron(Mtrans[orb],np.eye(2))).T
+    Msoc_spatial = trans.conj().T @ Msoc @ trans
     return Msoc_spatial
 
 

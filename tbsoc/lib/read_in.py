@@ -73,7 +73,7 @@ def read_poscar_wan_in(poscarfile = 'POSCAR',waninfile='wannier90.win'):
     A1=(np.asarray(pos[2].split())).astype(float)[0:3]
     A2=(np.asarray(pos[3].split())).astype(float)[0:3]
     A3=(np.asarray(pos[4].split())).astype(float)[0:3]
-    Lattice=np.matrix([A1,A2,A3])
+    Lattice=np.array([A1,A2,A3])
     print('successfully reading POSCAR ...')
 
     print('reading wannier90.win ...')
@@ -95,8 +95,8 @@ def read_poscar_wan_in(poscarfile = 'POSCAR',waninfile='wannier90.win'):
         for i in range(projind[0]+1,projind[1]):       
             if re.search(iatom,wan[i]):
                 if re.search('l',wan[i]):
-                    atom_proj[iatom]=re.findall("\d+",wan[i])
-                    proj_type += len(re.findall("\d+",wan[i]))
+                    atom_proj[iatom]=re.findall(r"\d+",wan[i])
+                    proj_type += len(re.findall(r"\d+",wan[i]))
                 else:
                     print('The style to set orb in  wannier90.win can not be recognized') 
                     print( 'only be read in the style with l=1,2,3 ...')
@@ -145,8 +145,8 @@ def read_KPOINTS(Latt,kpofile='KPOINTS'):
     khsym=[]
     for i in range(4,len(kpo)):
         #print (kpo[i])
-        if re.findall("\-?\d+\.?\d*",kpo[i]) != []:
-            kpoints = np.array([float(ikp) for ikp in re.findall("\-?\d+\.?\d*",kpo[i])])
+        if re.findall(r"\-?\d+\.?\d*",kpo[i]) != []:
+            kpoints = np.array([float(ikp) for ikp in re.findall(r"\-?\d+\.?\d*",kpo[i])])
             symbol=re.findall("[a-zA-Z]+",kpo[i])[0]
             khsym.append(kpoints)
             ksymbol.append(symbol)
@@ -167,14 +167,14 @@ def read_KPOINTS(Latt,kpofile='KPOINTS'):
     kpath=[]
     xpath=[]
     xsymm=[0]
-    B=2*np.pi*(Latt.I).T
+    B=2*np.pi*np.linalg.inv(Latt).T
     temp=0
     for i in range(nkslice):
         kslice = interpolationkpath(khsym[i],KPOINT_IN_LINE)
         xslice = [temp]
         for i in range(1, len(kslice)):
-            ka = np.array(kslice[i]*B).reshape(3)
-            kb = np.array(kslice[i-1]*B).reshape(3)
+            ka = np.dot(kslice[i], B)
+            kb = np.dot(kslice[i-1], B)
             delta = np.sqrt(sum([(kb[j] - ka[j]) ** 2 for j in range(0, 3)]))
             temp = xslice[i - 1] + delta 
             #print (delta)
@@ -214,7 +214,7 @@ def read_EIGENVAL(FILENAME='EIGENVAL'):
     NBND = int(re.findall('[0-9]+', data[5])[2])
     
     for i in range(7+(NBND+2)*Nhse, len(data)):
-        temp = re.findall('[0-9\-\.\+E]+', data[i])
+        temp = re.findall(r'[0-9\-\.\+E]+', data[i])
         if not temp:
             continue
         if len(temp) == 4:
