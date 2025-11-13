@@ -1,2 +1,9 @@
 *.pyc
 *.vscode
+
+# Generated output files
+band.pdf
+bands_soc.dat
+
+# Golden reference files for integration tests
+tests/test_data/*_bands_soc.dat

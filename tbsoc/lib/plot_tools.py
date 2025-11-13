@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import scipy as sp
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import time
 import matplotlib as mpl
@@ -32,8 +34,9 @@ def band_plot(Efermi, EMIN, EMAX, xpath, xsymm, plot_sbol, bndtb, pl_tb=True, pl
     plt.yticks(fontsize=fonts)
     plt.tick_params(direction='in')
     
-    plt.savefig('band.pdf',dpi=200,bbox_inches='tight')
-    plt.show() 
+    # Save the plot and the data to the specified directory
+    plt.savefig(f'{savedir}/band.pdf',dpi=200,bbox_inches='tight')
+    np.savetxt(f'{savedir}/bands_soc.dat', bndtb)
 
     return 0
        
