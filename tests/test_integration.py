@@ -120,7 +120,7 @@ def test_integration_fit(example_name, tmp_path):
     # The notebook mentions lambdas=[0,0.10,0, 0.24] and fits to something like [0.159, 0.212]
     # Our fit is on all lambdas, so we compare to a known good result.
         # Note: The exact values can vary slightly based on optimizer and machine precision.
-    golden_lambdas = np.array([0.0, 0.0693, 0.0, 0.2187])
+    golden_lambdas = np.array([0.0, 0.1124, 0.0, 0.2231])
     
     # We only compare the non-zero lambdas that were actually optimized
     fit_indices = [i for i, l in enumerate(input_data["lambdas"]) if l != 0.0]

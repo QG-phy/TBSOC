@@ -1,128 +1,202 @@
 import numpy as np
+import time
 from scipy.optimize import minimize
+import jax
+import jax.numpy as jnp
+
 from tbsoc.lib.json_loader import j_loader
 from tbsoc.entrypoints.loadall import load_all_data
 from tbsoc.lib.soc_mat import get_Hsoc
 from tbsoc.lib.cal_tools import hr2hk
+from tbsoc.lib.jax_core import loss_fn_jax
 
-def find_best_match(target_band, candidate_bands):
+def build_soc_basis_matrices(full_lambdas, fit_indices, orbitals, orb_type, orb_num, Msoc):
     """
-    Finds the best matching candidate band for a target band.
-
-    Args:
-        target_band (np.array): A 1D array of energies for the target band.
-        candidate_bands (np.array): A 2D array (n_bands, n_kpoints) of candidate bands.
-
-    Returns:
-        tuple: The index of the best match and the minimum RMSE.
+    Construct the constant matrices M_i such that H_soc = sum_i lambda_i * M_i.
+    Returns: Stacked array (n_fit_params, n_wan, n_wan)
     """
-    min_rmse = float('inf')
-    best_match_idx = -1
+    basis_matrices = []
     
-    target_avg = np.mean(target_band)
-
-    for i, candidate_band in enumerate(candidate_bands):
-        candidate_avg = np.mean(candidate_band)
-        # Align the candidate band to the target band's average energy
-        aligned_candidate = candidate_band + (target_avg - candidate_avg)
-        rmse = np.sqrt(np.mean((target_band - aligned_candidate)**2))
+    # We want to isolate the effect of each fitted lambda.
+    # We do this by calling get_Hsoc with a "one-hot" lambda vector.
+    # Note: get_Hsoc logic is linear in lambdas.
+    
+    n_params = len(full_lambdas)
+    
+    # Check if there is a 'background' SOC from non-fitted parameters?
+    # Current assumption: non-fitted parameters are zero. 
+    # If they are non-zero but fixed, we should calculate a "static_soc" matrix.
+    # But usually fitsoc optimizes all non-zero values.
+    # We will strictly follow the indices.
+    
+    for idx_in_full in fit_indices:
+        # Create a dummy lambda vector with 1.0 at the current index
+        temp_lambdas = np.zeros(n_params)
+        temp_lambdas[idx_in_full] = 1.0
         
-        if rmse < min_rmse:
-            min_rmse = rmse
-            best_match_idx = i
+        # Calculate H_soc for this single unit parameter
+        h_basis = get_Hsoc(temp_lambdas, orbitals, orb_type, orb_num, Msoc)
+        basis_matrices.append(h_basis)
+        
+    return np.array(basis_matrices)
+
+def find_best_alignment(tb_energies_flat, dft_bands_flat, n_tb, n_dft_bands, n_kpoints):
+    """
+    Finds the best integer offset N such that TB[0] aligns with DFT[N].
+    Assumes bands are sorted.
+    
+    Args:
+        tb_energies_flat: (nk * n_tb) or (nk, n_tb)
+        dft_bands_flat: (nk, n_dft)
+    """
+    # Reshape for easier broadcasting if needed, but mean squared error is robust
+    tb_mean = np.mean(tb_energies_flat)
+    
+    best_offset = -1
+    min_mse = float('inf')
+    
+    max_offset = n_dft_bands - n_tb
+    
+    if max_offset < 0:
+        raise ValueError(f"DFT bands count ({n_dft_bands}) is smaller than TB bands ({n_tb}). Cannot fit.")
+    
+    print(f"Scanning offsets 0 to {max_offset}...")
+    
+    for offset in range(max_offset + 1):
+        # Extract the window of DFT bands
+        target_window = dft_bands_flat[:, offset : offset + n_tb]
+        
+        target_mean = np.mean(target_window)
+        
+        # Center them for fair comparison (Shift-Invariant alignment)
+        # We align the centers of mass of the band structures
+        diff = (tb_energies_flat - tb_mean) - (target_window - target_mean)
+        
+        mse = np.mean(diff**2)
+        
+        if mse < min_mse:
+            min_mse = mse
+            best_offset = offset
             
-    return best_match_idx, min_rmse
+    return best_offset, min_mse
 
 def fitsoc(INPUT, outdir='./', **kwargs):
     """
-    This function automatically fits the SOC parameters (lambdas) by comparing
-    the tight-binding band structure with DFT calculations.
+    Fits SOC parameters using JAX-accelerated gradient descent.
     """
-    print("--- Starting automatic SOC fitting ---")
+    start_time = time.time()
+    print("--- Starting JAX-accelerated SOC fitting ---")
     
-    # 1. Load all data and fitting parameters
+    # 1. Load Data
     jdata = j_loader(INPUT)
     data_dict = load_all_data(**jdata)
     
-    vasp_bands = data_dict['vasp_bands']
-    efermi = jdata.get('Efermi')
-    if efermi is None:
-        raise ValueError("Efermi must be provided in the input JSON for fitting.")
-
-    fit_emin = jdata.get('fit_emin', -5.0)
-    fit_emax = jdata.get('fit_emax', 5.0)
+    vasp_bands = data_dict['vasp_bands'] # Shape: (n_k, n_dft_bands) or similar? 
+    # Usually vasp_bands in tbsoc is (n_dft, n_k)? No, let's check `read_in.py`.
+    # `read_EIGENVAL` returns `k_bands` = `np.array(k_bands)`.
+    # `k_bands` logic: `k_bands.append(sorted(kb_temp))`.
+    # `kb_temp` is one k-point. So `k_bands` is (n_k, n_bands).
+    # Correct.
     
-    # Identify which lambdas to optimize (the non-zero ones)
+    # 2. Config & Pre-calculation
+    efermi = jdata.get('Efermi')
+    sigma = jdata.get('weight_sigma', 2.0) # Energy weighting width
+    print(f"DFT Fermi Level: {efermi} eV. Weighting sigma: {sigma} eV")
+
     initial_full_lambdas = np.array(jdata.get('lambdas'))
     fit_indices = np.where(initial_full_lambdas != 0)[0]
-    initial_fit_lambdas = initial_full_lambdas[fit_indices]
-
-    print(f"Energy window for fitting: [{fit_emin}, {fit_emax}] eV around Efermi.")
-    print(f"Initial guess for lambdas to be fitted: {initial_fit_lambdas}")
-    print(f"Fitting will optimize the lambdas at indices: {fit_indices}")
-
-    # 2. Filter DFT bands to get the "target bands"
-    e_min_abs = efermi + fit_emin
-    e_max_abs = efermi + fit_emax
+    initial_params = initial_full_lambdas[fit_indices]
     
-    target_dft_indices = [
-        i for i, band in enumerate(vasp_bands.T) 
-        if np.any((band > e_min_abs) & (band < e_max_abs))
-    ]
-    target_dft_bands = vasp_bands[:, target_dft_indices]
-    print(f"Found {len(target_dft_indices)} DFT bands in the energy window.")
+    if len(initial_params) == 0:
+        print("No non-zero lambdas found. Nothing to fit.")
+        return
 
-    # 3. Find the DFT anchor band (closest to Efermi)
-    avg_energies = np.mean(target_dft_bands, axis=0)
-    anchor_dft_local_idx = np.argmin(np.abs(avg_energies - efermi))
-    anchor_dft_global_idx = target_dft_indices[anchor_dft_local_idx]
-    anchor_dft_band = vasp_bands[:, anchor_dft_global_idx]
-    print(f"Using DFT band {anchor_dft_global_idx} as the anchor band.")
+    print(f"Optimizing {len(initial_params)} parameters at indices: {fit_indices}")
+    print("Pre-calculating Hamiltonian components...")
+    
+    # A. Build Basis Matrices
+    soc_basis = build_soc_basis_matrices(
+        initial_full_lambdas, fit_indices, 
+        data_dict['orbitals'], data_dict['orb_type'], 
+        data_dict['orb_num'], data_dict['Msoc']
+    ) # (n_params, n_wan, n_wan)
+    
+    # B. Build Non-SOC Hk
+    hk_tb = hr2hk(
+        data_dict['hop_spinor'], data_dict['Rlatt'], 
+        data_dict['kpath'], data_dict['num_wan']
+    ) # (n_k, n_wan, n_wan)
 
-    # 4. Define the objective function for the optimizer
-    def objective_function(trial_fit_lambdas):
-        # a. Reconstruct the full lambda array
-        full_lambdas = np.copy(initial_full_lambdas)
-        full_lambdas[fit_indices] = trial_fit_lambdas
+    # Convert to JAX arrays
+    hk_tb_jax = jnp.array(hk_tb)
+    soc_basis_jax = jnp.array(soc_basis)
+    
+    # 3. Phase 1: Alignment (using Initial Guess)
+    print("Phase 1: Band Alignment...")
+    # Calculate initial TB bands
+    # We can use the JAX function (compiled) for this
+    initial_loss_dummy = loss_fn_jax(
+        initial_params, soc_basis_jax, hk_tb_jax, 
+        np.zeros((hk_tb.shape[0], hk_tb.shape[1])), np.zeros((hk_tb.shape[0], hk_tb.shape[1]))
+    ) # Compile trigger (optional)
+    
+    h_soc_init = jnp.tensordot(initial_params, soc_basis_jax, axes=1)
+    h_tot_init = hk_tb_jax + h_soc_init
+    eigvals_init = np.array(jnp.linalg.eigvalsh(h_tot_init)) # (n_k, n_wan)
+    
+    n_wan = eigvals_init.shape[1]
+    n_dft = vasp_bands.shape[1]
+    n_k = vasp_bands.shape[0]
+    
+    # Perform Alignment Logic
+    best_offset, min_mse = find_best_alignment(eigvals_init, vasp_bands, n_wan, n_dft, n_k)
+    print(f"Alignment Found: TB Bands correspond to DFT Bands {best_offset} - {best_offset + n_wan - 1}")
+    print(f"Initial MSE (Unweighted): {min_mse:.6f}")
+    
+    # 4. Phase 2: Optimization
+    print("Phase 2: Optimization...")
+    
+    # Prepare Target and Weights
+    target_bands = vasp_bands[:, best_offset : best_offset + n_wan]
+    
+    # Calculate Weights: exp(-|E - Ef| / sigma)
+    # Efermi is relative to what? vasp_bands were shifted by read_EIGENVAL if EFERMI was 0?
+    # read_in.py had EFERMI=0. So vasp_bands are raw.
+    # We should assume 'efermi' provided in JSON is the absolute value in VASP energy scale.
+    weights_np = np.exp(-np.abs(target_bands - efermi) / sigma)
+    
+    # Convert constraints to JAX
+    target_bands_jax = jnp.array(target_bands)
+    weights_jax = jnp.array(weights_np)
+    
+    # Define Gradient Function
+    val_and_grad_fn = jax.value_and_grad(loss_fn_jax)
+    
+    def scipy_fun(x):
+        # Wrapper to bridge JAX and Scipy
+        # x is float64 usually
+        v, g = val_and_grad_fn(x, soc_basis_jax, hk_tb_jax, target_bands_jax, weights_jax)
+        return float(v), np.array(g, dtype=np.float64)
 
-        # b. Construct candidate TB+SOC bands
-        hsoc = get_Hsoc(full_lambdas, data_dict['orbitals'], data_dict['orb_type'], data_dict['orb_num'], data_dict['Msoc'])
-        hksoc = hr2hk(data_dict['hop_spinor'], data_dict['Rlatt'], data_dict['kpath'], data_dict['num_wan']) + hsoc
-        bands_tb_soc = np.linalg.eigvalsh(hksoc)
-
-        # c. Find the TB band that best matches the DFT anchor band
-        best_tb_anchor_idx, _ = find_best_match(anchor_dft_band, bands_tb_soc.T)
-        
-        # d. Establish the index mapping
-        index_offset = best_tb_anchor_idx - anchor_dft_global_idx
-        
-        # e. Calculate total loss using the fixed mapping
-        total_loss = 0.0
-        num_bands_in_loss = 0
-        for i, dft_idx in enumerate(target_dft_indices):
-            tb_idx = dft_idx + index_offset
-            if 0 <= tb_idx < bands_tb_soc.shape[1]:
-                dft_band = target_dft_bands[:, i]
-                tb_band = bands_tb_soc[:, tb_idx]
-                
-                dft_avg = np.mean(dft_band)
-                tb_avg = np.mean(tb_band)
-                aligned_tb_band = tb_band + (dft_avg - tb_avg)
-                
-                total_loss += np.sqrt(np.mean((dft_band - aligned_tb_band)**2))
-                num_bands_in_loss += 1
-        
-        return total_loss / num_bands_in_loss if num_bands_in_loss > 0 else float('inf')
-
-    # 5. Run the optimization
-    print("Starting optimization...")
-    res = minimize(objective_function, initial_fit_lambdas, method='Nelder-Mead', options={'disp': True})
-
-    # 6. Print the results
+    # Run Optimization
+    res = minimize(
+        scipy_fun, 
+        initial_params, 
+        method='L-BFGS-B', 
+        jac=True,
+        options={'disp': True, 'maxiter': 200}
+    )
+    
+    # 5. Output Results
+    final_params = res.x
     final_full_lambdas = np.copy(initial_full_lambdas)
-    final_full_lambdas[fit_indices] = res.x
+    final_full_lambdas[fit_indices] = final_params
+    
     print("\n--- Optimization Finished ---")
-    print(f"Final Loss: {res.fun}")
+    print(f"Success: {res.success}")
+    print(f"Message: {res.message}")
+    print(f"Final Weighted MSE: {res.fun:.6f}")
     print(f"Optimized Lambdas: {final_full_lambdas}")
+    print(f"Total time: {time.time() - start_time:.2f}s")
     
     return res

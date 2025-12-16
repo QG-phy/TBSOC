@@ -14,16 +14,27 @@ def interpolationkpath(khp,npoints):
     return kpath
 
 
-def hr2hk(hr,Rlatt,kpath,num_wann):
-    """Transform Hr to Hk for deg s = 1."""
-    Hk=[]
-    kpath = np.reshape(kpath,[-1,3])
-    for k in kpath:
-        hk=np.zeros([num_wann,num_wann], dtype=complex)
-        for r in range(len(hr)):
-            R_lattc = Rlatt[r]
-            #hk+=(hr[r])/ * np.exp(-1j * 2 * np.pi* np.dot(k,R_lattc) )
-            hk+=(hr[r]) * np.exp(-1j * 2 * np.pi* np.dot(k,R_lattc) )
-            #hk+=(hr[r][1]/deg[r]) * np.exp(-1j * 2 * np.pi* np.dot(k,R_lattc) )
-        Hk.append(hk)
+def hr2hk(hr, Rlatt, kpath, num_wann):
+    """
+    Transform Hr to Hk using vectorized operations.
+    
+    Args:
+        hr: Hopping matrices (nrpts, num_wann, num_wann) (or 2*num_wann for spinor)
+        Rlatt: Lattice vectors (nrpts, 3)
+        kpath: k-points (nk, 3)
+        num_wann: Number of wannier functions (dimension of matrix)
+        
+    Returns:
+        Hk: Hamiltonian at k-points (nk, num_wann, num_wann)
+    """
+    kpath = np.reshape(kpath, [-1, 3])
+    
+    # Calculate phase factors: exp(-i * 2pi * k . R)
+    # kpath shape: (nk, 3), Rlatt shape: (nr, 3) -> dot product shape: (nk, nr)
+    phase = np.exp(-1j * 2 * np.pi * np.dot(kpath, Rlatt.T))
+    
+    # Sum over R: Hk(k) = sum_R phase(k, R) * hr(R)
+    # phase: (nk, nr), hr: (nr, n, n) -> result: (nk, n, n)
+    Hk = np.einsum('kr,rij->kij', phase, hr)
+    
     return Hk

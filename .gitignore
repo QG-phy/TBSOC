@@ -49,8 +49,7 @@ htmlcov/
 # Project Specific Output
 band.pdf
 bands_soc.dat
-tbsoc/lib/__pycache__/
-tbsoc/entrypoints/__pycache__/
+
 
 # Golden reference files for integration tests (keep tracked if intended, but ignored here based on previous file)
 # tests/test_data/*_bands_soc.dat
