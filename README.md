@@ -1,67 +1,84 @@
-# TBSOC (former name Wannier_Add_onsite_SOC)
+# TBSOC (Wannier + On-site SOC)
 
-Spin–orbit coupling (SOC) drives interesting and non-trivial phenomena in solid-state physics, ranging from topological to magnetic to transport properties. A thorough study of such phenomena often requires effective models where the SOC term is explicitly included. However, the estimation of SOC strength for such models mostly depends on the spectroscopy experiments which can only provide a rough estimate. In this work, we provide a simple yet effective computational approach to estimate the onsite SOC strength using a combination of the ab initio and tight-binding calculations. We demonstrate the wider applicability and high sensitivity of our method by estimating SOC strength of materials with varying SOC strengths and the number of SOC active ions. As examples, we consider strongly correlated, topological, and semiconducting materials. We show that the estimated strengths agree well with the proposed values in the literature lending support to our methodology. This simplistic approach can readily be applied to a wide range of materials.
+**TBSOC** is a lightweight, high-performance Python package designed to add On-Site Spin-Orbit Coupling (SOC) to Wannier90 Tight-Binding (TB) models. It allows users to estimate accurate SOC strengths ($\lambda$) by automatically fitting TB band structures to DFT calculations.
 
-Copyright: Qiangqiang Gu at USTC, China. 
-Email: guqq@ustc.edu.cn
+## Key Features
+- **High Performance**: Powered by **JAX** and **Just-In-Time (JIT)** compilation for lightning-fast fitting (<1s for typical systems).
+- **Auto-Alignment**: Automatically detects the correct matching between TB and DFT bands (handles band index offsets).
+- **Physically-Aware**: Uses **Fermi-weighted loss** to prioritize accuracy near the Fermi level.
+- **Differentiable**: Uses exact gradients (Automatic Differentiation) for robust convergence, replacing slow derivative-free methods.
+- **Flexible**: Supports custom local axes and spin quantization axes.
 
-You may also contact Shishir Kumar Pandey : shishir.kr.pandey@gmail.com
+## Installation
 
-## Features:
-- calculate the $ab$ $initio$ SOC strength for $s$, $p$ and $d$ orbitals. 
-- output the SOC TB model, with basis defined in $| s_z \rangle$ basis.
-- supports for custom local axis for Wannier TB. 
-- support the custom spin quantization axis for  Wannier TB.
+### Prerequisites
+- Python 3.9+
+- [uv](https://github.com/astral-sh/uv) (Recommended for package management)
 
-### Install: 
-
-#### 1. From Pypi or Conda
+### Install via uv (Recommended)
+```bash
+git clone https://github.com/qqgu/TBSOC.git
+cd TBSOC
+uv sync
 ```
-pip install tbsoc
-```
 
-#### 2. From Source
-
-If you are installing from source, you will need:
-- Python 3.8 or later
-- numpy
-- scipy
-- matplotlib
-- scipy
-- pytest
- 
-First clone or download the source code from the website. Then, located in the repository root and running
-```
-cd path/tbsoc
+### Install via pip
+```bash
 pip install .
 ```
 
+## Usage
 
+TBSOC provides a command-line interface (`tbsoc`) with three main modes:
 
-### How to use:
-  you can run this code using jupiter-notebook and command line.
-  1. For jupiter-notebook, you can see the examples in the examples folder.
-  2. For command line, you can go to the examples folder and run the following command:
-  ```
-    tbsoc addsoc input.json
-  ```
-
-where input.json is the input file. you can get the band structure using the input SOC strength lambda.  Lambda can be tuned by fitting the DFT band structure with SOC. But for now this fitting only available in the jupiter-notebook mode
-
-We will add the fitting in the command line mode soon. 
-  
-  
-### How to cite:
+### 1. Pre-calculate (`precalc`)
+Converts `wannier90_hr.dat` to a more efficient format.
+```bash
+tbsoc precalc input.json
 ```
+
+### 2. Fit SOC (`fit`)
+Automatically fits the SOC parameters ($\lambda$) to match a DFT band structure (VASP `EIGENVAL`).
+```bash
+tbsoc fit input.json
+```
+**Key `input.json` parameters:**
+- `lambdas`: Initial guess for SOC strengths (e.g., `[0, 0.1, 0]`). Zero values are fixed; non-zero are optimized.
+- `Efermi`: DFT Fermi Energy (eV).
+- `weight_sigma`: (Optional) Width of the Fermi weighting window (default: 2.0 eV).
+
+### 3. Add SOC (`addsoc`)
+Calculates the final bands with specific SOC parameters and plots the result.
+```bash
+tbsoc addsoc input.json
+```
+
+## Input File Format (`input.json`)
+See `example/` directory for complete examples (GaAs, TaAs, etc.).
+```json
+{
+    "lambdas": [0, 0.1, 0],
+    "Efermi": 4.0815,
+    "vasp_bands_file": "EIGENVAL",
+    "orbitals": ["Ga", "As"],
+    "orb_type": [1, 1],
+    "orb_num": [3, 3],
+    ...
+}
+```
+
+## Cite
+If you use this code, please cite our paper:
+```bibtex
 @article{GU2023112090,
-title = {A computational method to estimate spin–orbital interaction strength in solid state systems},
-journal = {Computational Materials Science},
-volume = {221},
-pages = {112090},
-year = {2023},
-issn = {0927-0256},
-doi = {https://doi.org/10.1016/j.commatsci.2023.112090},
-url = {https://www.sciencedirect.com/science/article/pii/S0927025623000848},
-author = {Qiangqiang Gu and Shishir Kumar Pandey and Rajarshi Tiwari}
+  title = {A computational method to estimate spin–orbital interaction strength in solid state systems},
+  journal = {Computational Materials Science},
+  volume = {221},
+  pages = {112090},
+  year = {2023},
+  issn = {0927-0256},
+  doi = {https://doi.org/10.1016/j.commatsci.2023.112090},
+  url = {https://www.sciencedirect.com/science/article/pii/S0927025623000848},
+  author = {Qiangqiang Gu and Shishir Kumar Pandey and Rajarshi Tiwari}
 }
 ```
