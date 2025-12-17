@@ -1,0 +1,9 @@
+{
+    "lambdas":{
+        "Ir:d":0.38
+    },
+    "EMIN":-2,
+    "EMAX":4,
+    "Efermi":3.939900,
+    "weight_sigma": 2.0
+}
