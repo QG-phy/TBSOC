@@ -1,8 +1,19 @@
-# TBSOC (Wannier + On-site SOC)
+<div align="center">
+  <img src="tbsoc_logo.png" alt="TBSOC Logo" width="100"/>
+  
+  # TBSOC (Wannier + On-site SOC)
+  
+  **A lightweight, high-performance Python package for adding On-Site Spin-Orbit Coupling to Wannier90 Tight-Binding models**
+  
+  [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+  [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+  [![JAX](https://img.shields.io/badge/powered%20by-JAX-orange.svg)](https://github.com/google/jax)
+  
+</div>
 
-**TBSOC** is a lightweight, high-performance Python package designed to add On-Site Spin-Orbit Coupling (SOC) to Wannier90 Tight-Binding (TB) models. It allows users to estimate accurate SOC strengths ($\lambda$) by automatically fitting TB band structures to DFT calculations.
+---
 
-## Key Features
+## ✨ Key Features
 - **High Performance**: Powered by **JAX** and **Just-In-Time (JIT)** compilation for lightning-fast fitting (<1s for typical systems).
 - **Auto-Alignment**: Automatically detects the correct matching between TB and DFT bands, including partial band overlap when DFT has fewer bands than TB.
 - **Physically-Aware**: Uses **Gaussian-weighted loss** centered at the Fermi level to prioritize accuracy near the Fermi surface.
