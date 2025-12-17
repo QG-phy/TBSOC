@@ -2,6 +2,7 @@ import argparse
 from tbsoc.entrypoints.addsoc import addsoc
 from tbsoc.entrypoints.fitsoc import fitsoc
 from tbsoc.entrypoints.precalc import precalc
+from tbsoc.entrypoints.plotsoc import plotsoc
 
 def main_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -31,6 +32,12 @@ def main_parser() -> argparse.ArgumentParser:
                             help="the input parameter file in json format", type=str, default="input.json")
     parser_fit.add_argument("-o","--outdir", 
                             help="the output directory", type=str, default="./")
+    parser_plot = subparsers.add_parser("plot", help="plot soc TB vs DFT",
+                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_plot.add_argument("INPUT", 
+                            help="the input parameter file in json format", type=str, default="input.json")
+    parser_plot.add_argument("-o","--outdir", 
+                            help="the output directory", type=str, default="./")
 
     return parser
 
@@ -44,6 +51,8 @@ def main():
         addsoc(args.INPUT, args.outdir)
     elif args.command == "fit":
         fitsoc(args.INPUT, args.outdir)
+    elif args.command == "plot":
+        plotsoc(args.INPUT, args.outdir)
     else:
         parser.print_help()
         exit(1)

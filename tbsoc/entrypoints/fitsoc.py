@@ -102,11 +102,38 @@ def fitsoc(INPUT, outdir='./', **kwargs):
     # Correct.
     
     # 2. Config & Pre-calculation
-    efermi = jdata.get('Efermi')
-    sigma = jdata.get('weight_sigma', 2.0) # Energy weighting width
+    efermi = jdata.get('Efermi', 0.0)
+    sigma = jdata.get('weight_sigma', 0.5) # Default to 0.5 eV if not specified
     print(f"DFT Fermi Level: {efermi} eV. Weighting sigma: {sigma} eV")
 
-    initial_full_lambdas = np.array(jdata.get('lambdas'))
+    raw_lambdas = jdata.get('lambdas')
+    orb_labels = data_dict.get('orb_labels', [])
+
+    if isinstance(raw_lambdas, dict):
+        # Convert dict to array based on orb_labels order
+        if not orb_labels:
+            raise ValueError("Orbital labels missing in data, but lambdas provided as dict.")
+        
+        initial_full_lambdas = np.zeros(len(orb_labels))
+        for i, label in enumerate(orb_labels):
+            # Attempt to find key in raw_lambdas
+            val = raw_lambdas.get(label)
+            if val is None:
+                 # Check if it is an s-orbital (strictly l=0)
+                 # Label format is usually "Atom:orb" e.g. "Ga:s"
+                 orbital_type = label.split(':')[1] if ':' in label else label
+                 if orbital_type == 's':
+                     # s-orbitals have no SOC, default to 0 quietly
+                     val = 0.0
+                 else:
+                     print(f"Warning: No initial value for {label} in input. Defaulting to 0.")
+                     val = 0.0
+            initial_full_lambdas[i] = val
+    elif isinstance(raw_lambdas, list):
+        initial_full_lambdas = np.array(raw_lambdas)
+    else:
+        raise ValueError("Invalid format for 'lambdas' in input.json. Must be list or dict.")
+
     fit_indices = np.where(initial_full_lambdas != 0)[0]
     initial_params = initial_full_lambdas[fit_indices]
     

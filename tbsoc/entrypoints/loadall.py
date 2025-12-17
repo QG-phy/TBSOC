@@ -11,7 +11,14 @@ from tbsoc.lib.write_hr import write_hr
 import time
 import os
 
-def load_all_data (posfile, winfile, hrfile, kpfile, eigfile,**kwargs):
+def load_all_data(
+    posfile='./POSCAR', 
+    winfile='./wannier90.win', 
+    hrfile='./wannier90_hr.dat', 
+    kpfile='./KPOINTS', 
+    eigfile='./EIGENVAL', 
+    **kwargs
+):
     # load poscar and wannier90.win
     
     if not os.path.exists(posfile):
