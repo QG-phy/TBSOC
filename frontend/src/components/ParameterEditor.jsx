@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function ParameterEditor({ onRunFit, onPreview, externalLambdas }) {
+export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, isFitting, onStopFit }) {
   const [formData, setFormData] = useState({
     posfile: 'POSCAR',
     winfile: 'wannier90.win',
@@ -12,6 +12,8 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas }
     lambdas: [0.0, 0.0], 
   });
   
+  const [liveUpdate, setLiveUpdate] = useState(true);
+
   useEffect(() => {
       if (externalLambdas && externalLambdas.length > 0) {
           setFormData(prev => ({ ...prev, lambdas: externalLambdas }));
@@ -25,13 +27,15 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas }
   // Live Tuning Effect: Auto-update preview when lambdas change
   useEffect(() => {
     const timer = setTimeout(() => {
-        // Only auto-preview if we have valid data loaded
-        if (lambdaLabels.length > 0) {
-            handlePreview({ preventDefault: () => {} });
+        // Only auto-preview if we have valid data loaded AND live update is enabled
+        if (lambdaLabels.length > 0 && liveUpdate) {
+            // Check if we actually have data to preview
+            // (Avoiding infinite loops or premature calls)
+             handlePreview({ preventDefault: () => {} });
         }
     }, 150); // Debounce 150ms for smooth slider dragging
     return () => clearTimeout(timer);
-  }, [formData.lambdas]);
+  }, [formData.lambdas, liveUpdate]);
 
   const refreshFiles = () => {
       fetch('/api/files')
@@ -198,9 +202,20 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas }
             </div>
 
             <div style={{marginTop: '20px'}}>
-                <h3 style={{fontSize: '1rem', marginTop: '0', marginBottom: '10px', color: '#aaa'}}>
-                    Lambdas (Live Tuning)
-                    <span style={{fontSize: '0.7em', color: '#666', marginLeft: '10px'}}>Drag sliders to update plot</span>
+                <h3 style={{fontSize: '1rem', marginTop: '0', marginBottom: '10px', color: '#aaa', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                    <span>
+                        Lambdas (Live Tuning)
+                        <span style={{fontSize: '0.7em', color: '#666', marginLeft: '10px'}}>Drag sliders to update plot</span>
+                    </span>
+                    <label style={{display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.8em', color: '#ddd'}}>
+                        <input
+                            type="checkbox"
+                            checked={liveUpdate}
+                            onChange={(e) => setLiveUpdate(e.target.checked)}
+                            style={{marginRight: '5px', accentColor: '#42d392'}}
+                        />
+                        Live Update
+                    </label>
                 </h3>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '15px'}}>
                 {formData.lambdas.map((val, idx) => {
@@ -254,7 +269,11 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas }
 
         <div style={{display: 'flex', gap: '10px', marginTop: '30px'}}>
              <button type="button" onClick={handlePreview} style={{flex: 1, background: '#333', border: '1px solid #555'}}>Preview Bands</button>
-             <button type="button" onClick={handleSubmit} style={{flex: 1, background: 'linear-gradient(45deg, #646cff, #42d392)', fontWeight: 'bold'}}>Start Fitting</button>
+             {isFitting ? (
+                 <button type="button" onClick={onStopFit} style={{flex: 1, background: '#ff6b6b', fontWeight: 'bold'}}>Stop Fitting</button>
+             ) : (
+                 <button type="button" onClick={handleSubmit} style={{flex: 1, background: 'linear-gradient(45deg, #646cff, #42d392)', fontWeight: 'bold'}}>Start Fitting</button>
+             )}
         </div>
     </form>
   );

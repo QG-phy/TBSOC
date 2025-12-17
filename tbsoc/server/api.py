@@ -7,6 +7,10 @@ import glob
 router = APIRouter()
 
 # Global status (simplistic for single-user desktop app)
+import threading
+
+# Global variables
+stop_event = threading.Event()
 current_status = FitStatus(status="idle", progress=0.0, message="Ready")
 
 def run_fitting_task(config: FitConfig):
@@ -16,12 +20,15 @@ def run_fitting_task(config: FitConfig):
         current_status.message = "Fitting in progress..."
         current_status.progress = 0.1
         
+        # Reset cancel event
+        stop_event.clear()
+        
+        def check_stop():
+            if stop_event.is_set():
+                raise Exception("Stopped by User")
+        
         # Convert config to dict
         config_dict = config.dict()
-        
-    # Run fit (this is blocking, so we run it here in bg task)
-        # TODO: Capture stdout/stderr for logs
-        # TODO: The fitsoc function prints a lot, we might want to refactor it to return results or yield progress
         
         # Resolve paths relative to current_directory
         cwd = state.current_directory
@@ -32,10 +39,16 @@ def run_fitting_task(config: FitConfig):
                  if not os.path.isabs(config_dict[key]):
                      config_dict[key] = os.path.join(cwd, config_dict[key])
         
-        result = fitsoc(config_dict)
+        # Pass check_stop to fitsoc
+        result = fitsoc(config_dict, check_stop=check_stop)
         
-        current_status.status = "completed"
-        current_status.message = "Fitting completed successfully."
+        if not result["success"] and "Interrupted" in result["message"]:
+             current_status.status = "error"
+             current_status.message = result["message"]
+        else:
+             current_status.status = "completed"
+             current_status.message = "Fitting completed successfully."
+             
         current_status.progress = 1.0
         current_status.result = result
         
@@ -52,6 +65,15 @@ async def start_fit(config: FitConfig, background_tasks: BackgroundTasks):
     
     background_tasks.add_task(run_fitting_task, config)
     return {"message": "Fitting task started"}
+
+@router.post("/fit/stop")
+async def stop_fit():
+    global current_status
+    if current_status.status == "running":
+        stop_event.set()
+        current_status.message = "Stopping..."
+        return {"message": "Stop signal sent"}
+    return {"message": "No running task to stop"}
 
 @router.get("/status", response_model=FitStatus)
 async def get_status():
@@ -99,8 +121,9 @@ async def load_data_endpoint(config: FitConfig):
         state.data_manager.load_if_needed(config_dict)
         
         dm = state.data_manager
-        # Count num orbitals to return
-        # num_bands = dm.get_dft_bands()['bands'].shape[0] if dm.get_dft_bands() else 0
+        
+        # Auto-align check on load
+        # get_dft_bands will use best_offset if calculated in _precalculate
         
         return {
             "status": "loaded",

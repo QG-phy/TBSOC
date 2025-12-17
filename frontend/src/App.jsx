@@ -93,6 +93,16 @@ function App() {
       setStatus("Previewing...");
   };
 
+  const handleStopFit = async () => {
+      setStatus("Stopping...");
+      try {
+          await fetch('/api/fit/stop', { method: 'POST' });
+          // Poll will eventually see "cancelled" or "error"
+      } catch (e) {
+          console.error("Failed to stop fitting:", e);
+      }
+  };
+
   return (
     <ErrorBoundary>
     <div className="container" style={{maxWidth: '100%', padding: '20px', height: '100vh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column'}}>
@@ -108,7 +118,13 @@ function App() {
       
       <div style={{display: 'flex', gap: '20px', flex: 1, minHeight: 0}}>
           <div style={{flex: '0 0 400px', minWidth: '350px'}}>
-            <ParameterEditor onRunFit={runFit} onPreview={handlePreview} externalLambdas={activeLambdas} />
+            <ParameterEditor 
+                onRunFit={runFit} 
+                onPreview={handlePreview} 
+                externalLambdas={activeLambdas} 
+                isFitting={status.startsWith("Fitting") || status === "Submitting..."}
+                onStopFit={handleStopFit}
+            />
           </div>
           <div style={{flex: 1, minWidth: 0}}>
             <VisualizationDashboard lambdas={activeLambdas} runTrigger={runTrigger} fermiLevel={activeFermi} />

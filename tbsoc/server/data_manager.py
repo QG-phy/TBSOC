@@ -31,23 +31,8 @@ class DataManager:
 
     def _precalculate(self, config_dict):
         initial_full_lambdas = np.array(config_dict.get('lambdas', []))
-        # Ensure we have enough lambdas, if empty create zeros based on orb_type
-        # But fitsoc expects them.
         
         fit_indices = np.where(initial_full_lambdas != 0)[0]
-        # For visualization, we might want to vary ALL lambdas, or just the ones specified.
-        # But build_soc_basis_matrices relies on fit_indices.
-        # Let's assume for plotting manual lambdas, we might change any of them.
-        # But strictly speaking, the basis matrices are for the *fitted* parameters.
-        # If we change a lambda that was 0 initially (and thus not in fit_indices), our basis expansion is invalid if we only built it for fit_indices.
-        # FIX: For full manual control, we should probably build basis for ALL unique orbital types involved.
-        
-        # However, to keep consistent with fitsoc logic:
-        # We will re-use build_soc_basis_matrices but maybe with all indices if we want full control?
-        # Let's stick to the user provided lambdas structure.
-        
-        # If user adds a lambda in UI, it comes into config_dict.
-        # So if they add a lambda, config changes, we reload/re-calc.
         
         if len(fit_indices) == 0:
              # Just build TB
@@ -67,6 +52,34 @@ class DataManager:
         self.hk_tb_jax = jnp.array(self.hk_tb)
         self.soc_basis_jax = jnp.array(self.soc_basis)
         self.fit_indices = fit_indices
+
+        # --- Automatic Alignment (Same as plotsoc) ---
+        # Calculate initial bands to find alignment
+        if len(fit_indices) > 0:
+            current_params = initial_full_lambdas[fit_indices]
+            h_soc = jnp.tensordot(current_params, self.soc_basis_jax, axes=1)
+            h_total = self.hk_tb_jax + h_soc
+        else:
+            h_total = self.hk_tb_jax
+            
+        eigvals = np.array(jnp.linalg.eigvalsh(h_total)) # (n_k, n_wan)
+        
+        vasp_bands = self.data_dict['vasp_bands']
+        n_wan = eigvals.shape[1]
+        n_dft = vasp_bands.shape[1]
+        n_k = vasp_bands.shape[0]
+        
+        # We need find_best_alignment here. 
+        # Note: Importing inside method to avoid circular import if needed, or top level.
+        # Assuming top level import is safe (loadall imports fitsoc, but fitsoc imports soc_mat...)
+        # find_best_alignment is in fitsoc.
+        
+        print("DataManager: Aligning bands...")
+        from tbsoc.entrypoints.fitsoc import find_best_alignment
+        best_offset, min_mse = find_best_alignment(eigvals, vasp_bands, n_wan, n_dft, n_k)
+        self.best_offset = best_offset
+        print(f"DataManager: Alignment Found. Offset: {best_offset}")
+
 
     @property
     def orb_labels(self):
@@ -94,13 +107,19 @@ class DataManager:
     def get_dft_bands(self):
         if not self.data_dict: return None
         
-        # Use the data loaded by load_all_data which matches plotsoc.py logic
+        # Use aligned subset of DFT bands
+        vasp_bands = np.array(self.data_dict['vasp_bands']) # (nk, nbands)
+        n_wan = self.data_dict['num_wan']
+        offset = getattr(self, 'best_offset', 0)
+        
+        dft_subset = vasp_bands[:, offset : offset + n_wan]
+
         return {
-            "bands": np.array(self.data_dict['vasp_bands']).T.tolist(), 
+            "bands": dft_subset.T.tolist(), 
             "kpath": self.data_dict['kpath'].tolist(),
-            "k_distance": self.data_dict['xpath'].tolist(), # Use 'xpath' which is the x-axis distance
-            "k_ticks": self.data_dict['xsymm'].tolist(),    # X-axis tick positions (high symmetry points)
-            "k_labels": self.data_dict['plot_sbol']         # X-axis tick labels
+            "k_distance": self.data_dict['xpath'].tolist(),
+            "k_ticks": self.data_dict['xsymm'].tolist(),
+            "k_labels": self.data_dict['plot_sbol']
         }
 
     def calculate_tb_bands(self, lambdas_list):

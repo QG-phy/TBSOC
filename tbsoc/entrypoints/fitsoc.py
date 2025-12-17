@@ -203,19 +203,37 @@ def fitsoc(INPUT, outdir='./', **kwargs):
     val_and_grad_fn = jax.value_and_grad(loss_fn_jax)
     
     def scipy_fun(x):
+        # Check for cancellation
+        if kwargs.get('check_stop'):
+            kwargs['check_stop']()
+            
         # Wrapper to bridge JAX and Scipy
         # x is float64 usually
         v, g = val_and_grad_fn(x, soc_basis_jax, hk_tb_jax, target_bands_jax, weights_jax)
         return float(v), np.array(g, dtype=np.float64)
 
     # Run Optimization
-    res = minimize(
-        scipy_fun, 
-        initial_params, 
-        method='L-BFGS-B', 
-        jac=True,
-        options={'disp': True, 'maxiter': 200}
-    )
+    try:
+        # Enforce non-negative lambdas
+        bounds = [(0, None) for _ in range(len(initial_params))]
+        
+        res = minimize(
+            scipy_fun, 
+            initial_params, 
+            method='L-BFGS-B', 
+            jac=True,
+            bounds=bounds,
+            options={'disp': True, 'maxiter': 200}
+        )
+    except Exception as e:
+        print(f"\n--- Optimization Interrupted: {e} ---")
+        return {
+            "success": False,
+            "message": f"Interrupted: {e}",
+            "mse": -1,
+            "optimized_lambdas": initial_full_lambdas.tolist(),
+            "lambdas_dict": {}
+        }
     
     # 5. Output Results
     final_params = res.x
