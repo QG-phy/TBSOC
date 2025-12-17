@@ -74,6 +74,24 @@ def read_poscar_wan_in(poscarfile = 'POSCAR',waninfile='wannier90.win'):
     A2=(np.asarray(pos[3].split())).astype(float)[0:3]
     A3=(np.asarray(pos[4].split())).astype(float)[0:3]
     Lattice=np.array([A1,A2,A3])
+    # Parse coordinates
+    start_line = 7
+    if pos[7].strip().lower().startswith('s'): # Selective dynamics
+        start_line = 8
+    
+    mode = pos[start_line].strip().lower()
+    coord_start = start_line + 1
+    
+    coords = []
+    for i in range(ntot):
+        line_parts = pos[coord_start + i].split()
+        coords.append([float(x) for x in line_parts[0:3]])
+    coords = np.array(coords)
+    
+    # Convert to Cartesian if Direct
+    if mode.startswith('d'):
+        coords = np.dot(coords, Lattice)
+
     print('successfully reading POSCAR ...')
 
     print('reading wannier90.win ...')
@@ -108,11 +126,26 @@ def read_poscar_wan_in(poscarfile = 'POSCAR',waninfile='wannier90.win'):
 
     typeindex={}
     ic=-1
+    orb_labels=[]
     for i in spec:
         typeindex[i]={}
         for j in range(len(atom_proj[i])):
             ic+=1
-            typeindex[i][atom_proj[i][j]]=ic
+            l_val = atom_proj[i][j]
+            typeindex[i][l_val]=ic
+            # Construct label e.g. Ga:s, As:p
+            orb_name = orb_l_dict.get(l_val, f"l={l_val}")
+            # If mapped to list/tuple (e.g. s->'s', p->'p'), assume it's string.
+            # wait, line 140 says orbitals+=orb_l_dict[l]. So orb_l_dict[l] is a list of orbitals?
+            # '0' -> ['s'], '1' -> ['pz','px','py'] ?? No, usually SOC fitting parameters are per l-shell.
+            # Let's check orb_l_dict usage.
+            # Line 140: orbitals+=orb_l_dict[l]
+            # Line 142: print(orb_l_dict[l])
+            # If orb_l_dict['1'] is ['p'] or 'p'?
+            # Let's assume we want just the shell name. 
+            # Looking at previous logs: "generating Hsoc mat for porbital"
+            # It seems we want "Ga:p" or "Ga:l=1".
+            orb_labels.append(f"{i}:{orb_name if isinstance(orb_name, str) else orb_name[0] if isinstance(orb_name, list) and len(orb_name)>0 else l_val}")
 
     orbitals=[]
     orb_type=[]
@@ -129,7 +162,7 @@ def read_poscar_wan_in(poscarfile = 'POSCAR',waninfile='wannier90.win'):
         orb_num.append(orb_num_dict[orb])
     orb_num=np.asarray(orb_num)
 
-    return Lattice, atoms, atom_proj, orbitals, orb_num, orb_type
+    return Lattice, atoms, coords, atom_proj, orbitals, orb_num, orb_type, orb_labels
 
 
 def read_KPOINTS(Latt,kpofile='KPOINTS'):

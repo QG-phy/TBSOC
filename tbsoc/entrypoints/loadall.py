@@ -25,7 +25,7 @@ def load_all_data (posfile, winfile, hrfile, kpfile, eigfile,**kwargs):
     if not os.path.exists(eigfile):
         raise ValueError('EIGENVAL file does not exist!')
     
-    Lattice, atoms, atom_proj, orbitals, orb_num, orb_type = \
+    Lattice, atoms, coords, atom_proj, orbitals, orb_num, orb_type, orb_labels = \
         read_poscar_wan_in(poscarfile = posfile,waninfile = winfile)
 
     ## build the soc matrix.
@@ -51,10 +51,13 @@ def load_all_data (posfile, winfile, hrfile, kpfile, eigfile,**kwargs):
     data_dict = {}
     data_dict['Lattice'] = Lattice
     data_dict['atoms'] = atoms
+    data_dict['coords'] = coords
     data_dict['atom_proj'] = atom_proj
     data_dict['orbitals'] = orbitals
     data_dict['orb_num'] = orb_num
     data_dict['orb_type'] = orb_type
+    data_dict['orb_labels'] = orb_labels
+    data_dict['posfile'] = posfile
     data_dict['num_interaction'] = num_interaction
     data_dict['Msoc'] = Msoc
     data_dict['hop_spinor'] = hop_spinor

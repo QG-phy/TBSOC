@@ -27,7 +27,33 @@ uv sync
 pip install .
 ```
 
-## Usage
+## 🖥️ Desktop GUI Application
+
+TBSOC now includes a standalone desktop application for easier configuration and fitting.
+
+### Prerequisites
+- Ensure `uv` is installed.
+- Ensure `npm` (Node.js) is installed (only for building frontend, if modifying).
+
+### How to Run
+1. **Install Dependencies**:
+   ```bash
+   uv sync
+   ```
+
+2. **Launch the App**:
+   ```bash
+   uv run python -m tbsoc.server.main
+   ```
+   This will open a native window with the TBSOC interface.
+
+### Features
+- **Parameter Editor**: Configure `POSCAR`, `EIGENVAL`, and `Lambdas` visually.
+- **Auto-Fit**: Run the JAX-accelerated fitting directly from the GUI.
+
+---
+
+## 🚀 Usage (Command Line)
 
 TBSOC provides a command-line interface (`tbsoc`) with three main modes:
 

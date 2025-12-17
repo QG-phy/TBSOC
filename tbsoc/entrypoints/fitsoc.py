@@ -88,7 +88,10 @@ def fitsoc(INPUT, outdir='./', **kwargs):
     print("--- Starting JAX-accelerated SOC fitting ---")
     
     # 1. Load Data
-    jdata = j_loader(INPUT)
+    if isinstance(INPUT, dict):
+        jdata = INPUT
+    else:
+        jdata = j_loader(INPUT)
     data_dict = load_all_data(**jdata)
     
     vasp_bands = data_dict['vasp_bands'] # Shape: (n_k, n_dft_bands) or similar? 
@@ -196,7 +199,22 @@ def fitsoc(INPUT, outdir='./', **kwargs):
     print(f"Success: {res.success}")
     print(f"Message: {res.message}")
     print(f"Final Weighted MSE: {res.fun:.6f}")
-    print(f"Optimized Lambdas: {final_full_lambdas}")
+    
+    # Format Lambdas with Labels
+    orb_labels = data_dict.get('orb_labels', [])
+    if len(orb_labels) == len(final_full_lambdas):
+        lambda_dict = {label: float(val) for label, val in zip(orb_labels, final_full_lambdas)}
+        print(f"Optimized Lambdas: {lambda_dict}")
+    else:
+        print(f"Optimized Lambdas: {final_full_lambdas}")
     print(f"Total time: {time.time() - start_time:.2f}s")
     
-    return res
+    print(f"Total time: {time.time() - start_time:.2f}s")
+    
+    return {
+        "success": bool(res.success),
+        "message": str(res.message),
+        "mse": float(res.fun),
+        "optimized_lambdas": final_full_lambdas.tolist(),
+        "lambdas_dict": lambda_dict if len(orb_labels) == len(final_full_lambdas) else {}
+    }

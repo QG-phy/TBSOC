@@ -11,7 +11,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/
 lib64/
 parts/
 sdist/
@@ -53,3 +53,14 @@ bands_soc.dat
 
 # Golden reference files for integration tests (keep tracked if intended, but ignored here based on previous file)
 # tests/test_data/*_bands_soc.dat
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.DS_Store
