@@ -22,6 +22,17 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas }
   const [currentPath, setCurrentPath] = useState('');
   const [lambdaLabels, setLambdaLabels] = useState([]);
 
+  // Live Tuning Effect: Auto-update preview when lambdas change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+        // Only auto-preview if we have valid data loaded
+        if (lambdaLabels.length > 0) {
+            handlePreview({ preventDefault: () => {} });
+        }
+    }, 150); // Debounce 150ms for smooth slider dragging
+    return () => clearTimeout(timer);
+  }, [formData.lambdas]);
+
   const refreshFiles = () => {
       fetch('/api/files')
         .then(res => res.json())
@@ -187,27 +198,57 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas }
             </div>
 
             <div style={{marginTop: '20px'}}>
-                <h3 style={{fontSize: '1rem', marginTop: '0', marginBottom: '10px', color: '#aaa'}}>Lambdas (Initial Guess)</h3>
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px'}}>
-                {formData.lambdas.map((val, idx) => (
-                    <div key={idx}>
-                        <label style={{display: 'block', fontSize: '12px', color: '#666'}}>
-                            {lambdaLabels[idx] || `λ${idx}`}
-                        </label>
-                        <div style={{display: 'flex', gap: '5px'}}>
-                            <input
-                                type="number"
-                                step="0.01"
-                                value={val}
-                                onChange={(e) => handleLambdaChange(idx, e.target.value)}
-                                style={{width: '100%', padding: '5px', borderRadius: '4px', border: '1px solid #ddd'}}
-                            />
-                            <button type="button" onClick={() => removeLambda(idx)} style={{background: '#333', color: '#ff6b6b', padding: '0 12px', fontSize: '1.2em', border: 'none', borderRadius: '4px'}}>×</button>
+                <h3 style={{fontSize: '1rem', marginTop: '0', marginBottom: '10px', color: '#aaa'}}>
+                    Lambdas (Live Tuning)
+                    <span style={{fontSize: '0.7em', color: '#666', marginLeft: '10px'}}>Drag sliders to update plot</span>
+                </h3>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '15px'}}>
+                {formData.lambdas.map((val, idx) => {
+                    const label = lambdaLabels[idx] || `λ${idx}`;
+                    // Hide 's' orbitals (SOC is effectively zero)
+                    const isS = label.toLowerCase().endsWith(':s') || label.toLowerCase() === 's';
+                    if (isS) return null;
+
+                    return (
+                        <div key={idx} style={{background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '6px'}}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '5px'}}>
+                                <label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#ddd'}}>
+                                    {label}
+                                </label>
+                                <span style={{fontSize: '0.85rem', fontFamily: 'monospace', color: '#42d392'}}>
+                                    {val.toFixed(3)}
+                                </span>
+                            </div>
+                            
+                            <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                                {/* Slider for Live Tuning: Range 0 to 2 */}
+                                <input
+                                    type="range"
+                                    min="0.0"
+                                    max="2.0"
+                                    step="0.01"
+                                    value={val}
+                                    onChange={(e) => handleLambdaChange(idx, e.target.value)}
+                                    style={{flex: 1, cursor: 'pointer', accentColor: '#42d392'}}
+                                />
+                                
+                                {/* Number Input for Precision */}
+                                <input
+                                    type="number"
+                                    min="0.0"
+                                    step="0.01"
+                                    value={val}
+                                    onChange={(e) => handleLambdaChange(idx, e.target.value)}
+                                    style={{width: '70px', padding: '4px', borderRadius: '4px', border: '1px solid #555', background: '#222', color: '#fff'}}
+                                />
+                                
+                                <button type="button" onClick={() => removeLambda(idx)} style={{background: 'none', color: '#666', fontSize: '1.2em', border: 'none', cursor: 'pointer'}} title="Remove">×</button>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
                 </div>
-                <button type="button" onClick={addLambda} style={{width: '100%', marginTop: '5px', background: '#333', border: '1px dashed #555'}}>+ Add Lambda</button>
+                <button type="button" onClick={addLambda} style={{width: '100%', marginTop: '5px', padding: '8px', background: '#333', border: '1px dashed #555', color: '#aaa', borderRadius: '4px'}}>+ Add Optimization Parameter</button>
             </div>
         </div>
 

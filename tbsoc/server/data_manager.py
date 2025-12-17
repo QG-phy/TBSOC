@@ -75,14 +75,14 @@ class DataManager:
     def get_structure(self):
         if not self.data_dict: return None
 
-        # Read raw POSCAR file for 3dmol
+        # Read raw POSCAR file as backup, but generate XYZ for reliable 3Dmol visualization
         poscar_content = ""
         try:
              with open(self.data_dict.get('posfile', 'POSCAR'), 'r') as f:
                  poscar_content = f.read()
         except:
              pass
-
+             
         return {
             "lattice": self.data_dict['Lattice'].tolist(),
             "atoms": self.data_dict['atoms'], 
@@ -94,16 +94,13 @@ class DataManager:
     def get_dft_bands(self):
         if not self.data_dict: return None
         
-        kpath = self.data_dict['kpath']
-        # Calculate cumulative distance along k-path
-        k_diff = np.diff(kpath, axis=0) # (nk-1, 3)
-        segs = np.linalg.norm(k_diff, axis=1)
-        k_dist = np.concatenate(([0], np.cumsum(segs)))
-
+        # Use the data loaded by load_all_data which matches plotsoc.py logic
         return {
             "bands": np.array(self.data_dict['vasp_bands']).T.tolist(), 
-            "kpath": kpath.tolist(),
-            "k_distance": k_dist.tolist()
+            "kpath": self.data_dict['kpath'].tolist(),
+            "k_distance": self.data_dict['xpath'].tolist(), # Use 'xpath' which is the x-axis distance
+            "k_ticks": self.data_dict['xsymm'].tolist(),    # X-axis tick positions (high symmetry points)
+            "k_labels": self.data_dict['plot_sbol']         # X-axis tick labels
         }
 
     def calculate_tb_bands(self, lambdas_list):

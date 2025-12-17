@@ -47,7 +47,7 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0 }) {
 
     const traces = [];
 
-    // DFT Bands (Blue Dots/Lines)
+    // DFT Bands (Blue Dashed - Reference Style)
     if (dftData) {
         const xData = dftData.k_distance || listRange(dftData.bands[0].length);
         
@@ -57,15 +57,16 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0 }) {
                  y: band,
                  type: 'scatter',
                  mode: 'lines',
-                 line: { color: '#1f77b4', width: 1.5, dash: 'solid' }, // Blue for DFT as requested
-                 name: i === 0 ? 'DFT' : '',
+                 line: { color: 'blue', width: 2, dash: 'dash' }, // Match python: 'b--'
+                 name: i === 0 ? 'DFT (VASP)' : '',
                  showlegend: i === 0,
-                 hoverinfo: 'y'
+                 hoverinfo: 'y',
+                 opacity: 0.6
              });
         });
     }
 
-    // TB Bands (Red Lines)
+    // TB Bands (Red Solid - Reference Style)
     if (tbData && dftData) {
          const xData = dftData.k_distance || listRange(tbData[0].length);
          tbData.forEach((band, i) => {
@@ -74,8 +75,8 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0 }) {
                  y: band,
                  type: 'scatter',
                  mode: 'lines',
-                 line: { color: '#e63946', width: 1 }, // Thinner red line
-                 name: i === 0 ? 'TB SOC' : '',
+                 line: { color: 'red', width: 1.5, dash: 'solid' }, // Match python: 'r-'
+                 name: i === 0 ? 'TB+SOC' : '',
                  showlegend: i === 0,
                  hoverinfo: 'y'
              });
@@ -90,7 +91,7 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0 }) {
                 type: 'line',
                 x0: tick, x1: tick,
                 y0: 0, y1: 1, yref: 'paper',
-                line: { color: '#ccc', width: 1, dash: 'solid' }
+                line: { color: 'grey', width: 1, dash: 'solid' } // Match python: color='grey'
             });
         });
     }
@@ -107,40 +108,46 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0 }) {
             <Plot
                 data={traces}
                 layout={{
-                    title: 'Electronic Band Structure',
+
+                    title: { text: 'Electronic Band Structure', font: { size: 18 } },
                     autosize: true,
                     showlegend: true,
-                    legend: {x: 1, xanchor: 'right', y: 1, bgcolor: 'rgba(255,255,255,0.8)'},
+                    legend: {x: 1, xanchor: 'right', y: 1, bgcolor: 'rgba(255,255,255,0.8)', bordercolor: '#ccc', borderwidth: 1},
                     xaxis: {
+                        range: dftData ? [dftData.k_distance[0], dftData.k_distance[dftData.k_distance.length - 1]] : undefined,
                         zeroline: false,
-                        showgrid: false,
+                        showgrid: false, // Match python: only vertical lines at HSP
                         tickvals: dftData ? dftData.k_ticks : [],
                         ticktext: dftData ? dftData.k_labels : [],
                         mirror: true,
-                        ticks: 'inside',
+                        ticks: 'inside', // Match python: direction='in'
                         showline: true,
-                        linecolor: 'black'
+                        linecolor: 'black',
+                        linewidth: 1.5,
+                        tickfont: { size: 14 } // Match python fonts=12 (approx)
                     },
                     yaxis: {
                         title: {
                             text: 'E (eV)',
-                            font: { size: 16 },
-                            standoff: 0
+                            font: { size: 16 }, // Match python label size
+                            standoff: 10
                         },
                         automargin: true,
-                        zeroline: false,
+                        zeroline: false, // Python script plots just a line at 0? No, it plots axhline
                         showgrid: false,
                         mirror: true,
                         ticks: 'inside',
                         showline: true,
-                        linecolor: 'black'
+                        linecolor: 'black',
+                        linewidth: 1.5,
+                        tickfont: { size: 14 }
                     },
                     shapes: shapes,
                     template: 'plotly_white',
-                    margin: {l: 50, r: 10, t: 40, b: 40},
+                    margin: {l: 60, r: 20, t: 50, b: 50}, // Adjust margins
                     paper_bgcolor: 'white',
                     plot_bgcolor: 'white',
-                    font: { family: 'Arial, sans-serif', size: 14, color: '#333' }
+                    font: { family: 'Arial, sans-serif', size: 14, color: 'black' }
                 }}
                 useResizeHandler={true}
                 style={{width: '100%', height: '100%', minHeight: '300px'}}

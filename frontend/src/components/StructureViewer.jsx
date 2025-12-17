@@ -35,8 +35,14 @@ export default function StructureViewer({ runTrigger }) {
         // Add model from POSCAR string
         viewer.addModel(structure.poscar_content, "vasp");
         
-        // Style atoms
-        viewer.setStyle({}, {sphere: {scale: 0.3}, stick: {radius: 0.1}});
+        // Style atoms - Premium Look
+        // CPK Coloring will rely on VASP parsing (which we will improve on backend)
+        viewer.setStyle({}, {
+            sphere: {scale: 0.4, resolution: 32}, 
+            stick: {radius: 0.12, resolution: 32}
+        });
+        
+
         
         // Add unit cell box
         viewer.addUnitCell();
