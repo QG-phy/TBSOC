@@ -189,11 +189,9 @@ def fitsoc(INPUT, outdir='./', **kwargs):
     # Prepare Target and Weights
     target_bands = vasp_bands[:, best_offset : best_offset + n_wan]
     
-    # Calculate Weights: exp(-|E - Ef| / sigma)
-    # Efermi is relative to what? vasp_bands were shifted by read_EIGENVAL if EFERMI was 0?
-    # read_in.py had EFERMI=0. So vasp_bands are raw.
-    # We should assume 'efermi' provided in JSON is the absolute value in VASP energy scale.
-    weights_np = np.exp(-np.abs(target_bands - efermi) / sigma)
+    # Calculate Weights: exp(-(E - Ef)^2 / (2*sigma^2))
+    # Gaussian weights are more standard for 'sigma' parameter
+    weights_np = np.exp(- (target_bands - efermi)**2 / (2 * sigma**2))
     
     # Convert constraints to JAX
     target_bands_jax = jnp.array(target_bands)

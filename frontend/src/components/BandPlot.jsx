@@ -132,7 +132,9 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weight
     
     for (let i = 0; i <= numPoints; i++) {
         const E = minY + i * eStep;
-        const W = Math.exp(-Math.abs(E - fermiLevel) / (weightSigma || 1e-6));
+        // Gaussian: exp(-(x-u)^2 / (2*s^2))
+        const sigma = weightSigma || 1e-6;
+        const W = Math.exp(-Math.pow(E - fermiLevel, 2) / (2 * sigma * sigma));
         yWeight.push(E);
         xWeight.push(W);
     }
