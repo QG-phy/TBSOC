@@ -73,6 +73,8 @@ class DataManager:
         return self.data_dict.get('orb_labels', [])
 
     def get_structure(self):
+        if not self.data_dict: return None
+
         # Read raw POSCAR file for 3dmol
         poscar_content = ""
         try:
