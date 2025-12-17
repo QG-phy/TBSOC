@@ -1,0 +1,220 @@
+name: Build and Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm ci
+    
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+    
+    - name: Upload frontend artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+
+  build-macos:
+    needs: build-frontend
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+        uv pip install pyinstaller
+    
+    - name: Build macOS app with PyInstaller
+      run: |
+        uv run pyinstaller TBSOC.spec --clean --noconfirm
+    
+    - name: Create DMG installer
+      run: |
+        # Install create-dmg
+        brew install create-dmg
+        
+        # Create DMG
+        create-dmg \
+          --volname "TBSOC Installer" \
+          --volicon "dist/TBSOC.app/Contents/Resources/icon.icns" \
+          --window-pos 200 120 \
+          --window-size 800 400 \
+          --icon-size 100 \
+          --icon "TBSOC.app" 200 190 \
+          --hide-extension "TBSOC.app" \
+          --app-drop-link 600 185 \
+          "TBSOC-macOS.dmg" \
+          "dist/TBSOC.app" || true
+        
+        # Fallback if create-dmg fails
+        if [ ! -f "TBSOC-macOS.dmg" ]; then
+          hdiutil create -volname "TBSOC" -srcfolder dist/TBSOC.app -ov -format UDZO TBSOC-macOS.dmg
+        fi
+    
+    - name: Upload macOS installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: TBSOC-macOS
+        path: TBSOC-macOS.dmg
+
+  build-windows:
+    needs: build-frontend
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+        uv pip install pyinstaller
+    
+    - name: Build Windows executable
+      run: |
+        uv run pyinstaller TBSOC.spec --clean --noconfirm
+    
+    - name: Install NSIS
+      run: |
+        choco install nsis -y
+    
+    - name: Create NSIS installer script
+      run: |
+        $nsis_script = @"
+        !include "MUI2.nsh"
+        
+        Name "TBSOC"
+        OutFile "TBSOC-Windows-Installer.exe"
+        InstallDir "`$PROGRAMFILES64\TBSOC"
+        RequestExecutionLevel admin
+        
+        !define MUI_ABORTWARNING
+        !define MUI_ICON "dist\TBSOC\_internal\icon.ico"
+        
+        !insertmacro MUI_PAGE_WELCOME
+        !insertmacro MUI_PAGE_LICENSE "LICENSE"
+        !insertmacro MUI_PAGE_DIRECTORY
+        !insertmacro MUI_PAGE_INSTFILES
+        !insertmacro MUI_PAGE_FINISH
+        
+        !insertmacro MUI_UNPAGE_CONFIRM
+        !insertmacro MUI_UNPAGE_INSTFILES
+        
+        !insertmacro MUI_LANGUAGE "English"
+        
+        Section "Install"
+          SetOutPath "`$INSTDIR"
+          File /r "dist\TBSOC\*.*"
+          
+          CreateDirectory "`$SMPROGRAMS\TBSOC"
+          CreateShortcut "`$SMPROGRAMS\TBSOC\TBSOC.lnk" "`$INSTDIR\TBSOC.exe"
+          CreateShortcut "`$DESKTOP\TBSOC.lnk" "`$INSTDIR\TBSOC.exe"
+          
+          WriteUninstaller "`$INSTDIR\Uninstall.exe"
+          
+          WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\TBSOC" "DisplayName" "TBSOC"
+          WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\TBSOC" "UninstallString" "`$INSTDIR\Uninstall.exe"
+        SectionEnd
+        
+        Section "Uninstall"
+          Delete "`$INSTDIR\Uninstall.exe"
+          RMDir /r "`$INSTDIR"
+          Delete "`$SMPROGRAMS\TBSOC\TBSOC.lnk"
+          Delete "`$DESKTOP\TBSOC.lnk"
+          RMDir "`$SMPROGRAMS\TBSOC"
+          DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\TBSOC"
+        SectionEnd
+        "@
+        
+        $nsis_script | Out-File -FilePath "installer.nsi" -Encoding UTF8
+    
+    - name: Build NSIS installer
+      run: |
+        & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
+    
+    - name: Upload Windows installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: TBSOC-Windows
+        path: TBSOC-Windows-Installer.exe
+
+  create-release:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+    - name: Download macOS installer
+      uses: actions/download-artifact@v4
+      with:
+        name: TBSOC-macOS
+    
+    - name: Download Windows installer
+      uses: actions/download-artifact@v4
+      with:
+        name: TBSOC-Windows
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          TBSOC-macOS.dmg
+          TBSOC-Windows-Installer.exe
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

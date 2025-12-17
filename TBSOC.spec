@@ -32,6 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='resources/icon.ico',
 )
 coll = COLLECT(
     exe,
@@ -45,6 +46,6 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='TBSOC.app',
-    icon=None,
-    bundle_identifier=None,
+    icon='resources/icon.icns',
+    bundle_identifier='com.tbsoc.app',
 )
