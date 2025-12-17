@@ -78,7 +78,16 @@ class DataManager:
         from tbsoc.entrypoints.fitsoc import find_best_alignment
         best_offset, min_mse = find_best_alignment(eigvals, vasp_bands, n_wan, n_dft, n_k)
         self.best_offset = best_offset
-        print(f"DataManager: Alignment Found. Offset: {best_offset}")
+        
+        # Store alignment details for plotting
+        self.n_dft = n_dft
+        self.n_wan = n_wan
+        self.n_compare = min(n_wan, n_dft - best_offset)
+        
+        dft_target_window = vasp_bands[:, best_offset : best_offset + self.n_compare]
+        self.dft_window_mean = np.mean(dft_target_window)
+        
+        print(f"DataManager: Alignment Found. Offset: {best_offset}, Overlap: {self.n_compare}")
 
 
     @property
@@ -109,10 +118,12 @@ class DataManager:
         
         # Use aligned subset of DFT bands
         vasp_bands = np.array(self.data_dict['vasp_bands']) # (nk, nbands)
-        n_wan = self.data_dict['num_wan']
         offset = getattr(self, 'best_offset', 0)
+        n_compare = getattr(self, 'n_compare', self.data_dict['num_wan'])
         
-        dft_subset = vasp_bands[:, offset : offset + n_wan]
+        # Handle case where n_dft < offset + n_compare (shouldn't happen with correct logic)
+        max_idx = min(vasp_bands.shape[1], offset + n_compare)
+        dft_subset = vasp_bands[:, offset : max_idx]
 
         return {
             "bands": dft_subset.T.tolist(), 
@@ -134,16 +145,11 @@ class DataManager:
         
         current_params = full_lambdas[self.fit_indices]
         
-        # Reconstruct H_total
-        # H = H_tb + sum(lambda_i * M_i)
-        # Using jax logic:
-        # h_soc = jnp.tensordot(lambdas, soc_basis_matrices, axes=1)
-        
         if len(self.fit_indices) > 0:
             h_soc = jnp.tensordot(current_params, self.soc_basis_jax, axes=1)
             h_total = self.hk_tb_jax + h_soc
         else:
             h_total = self.hk_tb_jax
             
-        eigvals = jnp.linalg.eigvalsh(h_total)
+        eigvals = jnp.linalg.eigvalsh(h_total) # (nk, n_wan)
         return eigvals.T.tolist() # (n_bands, nk) for plotting convenience

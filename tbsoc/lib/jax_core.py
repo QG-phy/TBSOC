@@ -45,14 +45,19 @@ def loss_fn_jax(lambdas, soc_basis_matrices, hk_tb, target_bands, weights):
     
     # 3. Diagonalize to get eigenvalues
     # eigvalsh returns eigenvalues in ascending order
+    # 3. Diagonalize to get eigenvalues
+    # eigvalsh returns eigenvalues in ascending order
     eigvals = jnp.linalg.eigvalsh(h_total) # Shape: (nk, n_wan)
     
+    # Slice eigvals if target_bands has fewer bands than TB model
+    # Assumes we are matching the specific bottom subset of TB bands
+    n_compare = target_bands.shape[1]
+    eigvals_subset = eigvals[:, :n_compare]
+    
     # 4. Energy Shift Alignment (Shift-Invariant Loss)
-    # Calculate the weighted mean difference
-    # shift = mean( (E_tb - E_target) * weights ) / mean(weights) ??
-    # Or just simple mean difference? Simple mean is safer to avoid weight bias towards specific features.
-    mean_diff = jnp.mean(eigvals - target_bands)
-    eigvals_aligned = eigvals - mean_diff
+    # Calculate the weighted mean difference on the subset
+    mean_diff = jnp.mean(eigvals_subset - target_bands)
+    eigvals_aligned = eigvals_subset - mean_diff
     
     # 5. Calculate Difference
     diff = eigvals_aligned - target_bands

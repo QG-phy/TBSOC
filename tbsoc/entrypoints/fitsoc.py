@@ -57,20 +57,47 @@ def find_best_alignment(tb_energies_flat, dft_bands_flat, n_tb, n_dft_bands, n_k
     
     max_offset = n_dft_bands - n_tb
     
-    if max_offset < 0:
-        raise ValueError(f"DFT bands count ({n_dft_bands}) is smaller than TB bands ({n_tb}). Cannot fit.")
+    # If DFT bands are fewer, we allows fitting if user insists (partial alignment).
+    # "DFT[k] corresponds to TB[0], k >= 0".
+    # We scan offset k from 0 upwards.
+    # We allow k such that we have at least some overlap.
     
-    print(f"Scanning offsets 0 to {max_offset}...")
+    # Heuristic: We judge alignment based on the bottom half of the TB bands
+    # as suggested by user: [0, max(n_tb/2, 1)].
+    # This avoids using high energy TB bands which might correspond to meaningless/missing DFT bands.
     
-    for offset in range(max_offset + 1):
+    judge_limit = max(n_tb // 2, 1)
+    
+    # We scan possible offsets for DFT start.
+    # User suggestion: "up to n_dft - n_tb/2"
+    # This prevents scanning too far where the overlap is too small or irrelevant.
+    scan_limit = max(0, n_dft_bands - judge_limit)
+
+    print(f"Scanning offsets 0 to {scan_limit} using top {judge_limit} bands for judgement...")
+    
+    for offset in range(scan_limit + 1):
+        # Determine number of overlapping bands
+        n_overlap = min(n_tb, n_dft_bands - offset)
+        
+        if n_overlap <= 0: continue
+        
+        # We only use the bottom 'judge_limit' bands of the overlap for MSE calculation
+        # But we can't exceed the actual overlap
+        n_compare = min(n_overlap, judge_limit)
+        
+        if n_compare < 1: continue
+
         # Extract the window of DFT bands
-        target_window = dft_bands_flat[:, offset : offset + n_tb]
+        target_window = dft_bands_flat[:, offset : offset + n_compare]
+        
+        # Extract corresponding TB bands (from bottom 0)
+        tb_subset = tb_energies_flat[:, :n_compare]
         
         target_mean = np.mean(target_window)
+        tb_mean = np.mean(tb_subset)
         
-        # Center them for fair comparison (Shift-Invariant alignment)
-        # We align the centers of mass of the band structures
-        diff = (tb_energies_flat - tb_mean) - (target_window - target_mean)
+        # Center them
+        diff = (tb_subset - tb_mean) - (target_window - target_mean)
         
         mse = np.mean(diff**2)
         
@@ -94,16 +121,11 @@ def fitsoc(INPUT, outdir='./', **kwargs):
         jdata = j_loader(INPUT)
     data_dict = load_all_data(**jdata)
     
-    vasp_bands = data_dict['vasp_bands'] # Shape: (n_k, n_dft_bands) or similar? 
-    # Usually vasp_bands in tbsoc is (n_dft, n_k)? No, let's check `read_in.py`.
-    # `read_EIGENVAL` returns `k_bands` = `np.array(k_bands)`.
-    # `k_bands` logic: `k_bands.append(sorted(kb_temp))`.
-    # `kb_temp` is one k-point. So `k_bands` is (n_k, n_bands).
-    # Correct.
-    
+    vasp_bands = data_dict['vasp_bands']
+
     # 2. Config & Pre-calculation
     efermi = jdata.get('Efermi', 0.0)
-    sigma = jdata.get('weight_sigma', 0.5) # Default to 0.5 eV if not specified
+    sigma = jdata.get('weight_sigma', 0.5) 
     print(f"DFT Fermi Level: {efermi} eV. Weighting sigma: {sigma} eV")
 
     raw_lambdas = jdata.get('lambdas')
@@ -160,7 +182,7 @@ def fitsoc(INPUT, outdir='./', **kwargs):
     # Convert to JAX arrays
     hk_tb_jax = jnp.array(hk_tb)
     soc_basis_jax = jnp.array(soc_basis)
-    
+
     # 3. Phase 1: Alignment (using Initial Guess)
     print("Phase 1: Band Alignment...")
     # Calculate initial TB bands
@@ -182,12 +204,15 @@ def fitsoc(INPUT, outdir='./', **kwargs):
     best_offset, min_mse = find_best_alignment(eigvals_init, vasp_bands, n_wan, n_dft, n_k)
     print(f"Alignment Found: TB Bands correspond to DFT Bands {best_offset} - {best_offset + n_wan - 1}")
     print(f"Initial MSE (Unweighted): {min_mse:.6f}")
-    
+
     # 4. Phase 2: Optimization
     print("Phase 2: Optimization...")
     
     # Prepare Target and Weights
-    target_bands = vasp_bands[:, best_offset : best_offset + n_wan]
+    # Handle partial overlap
+    n_compare = min(n_wan, n_dft - best_offset)
+    target_bands = vasp_bands[:, best_offset : best_offset + n_compare]
+    print(f"Fitting using {n_compare} overlapping bands (TB: {n_wan}, DFT: {n_dft})")
     
     # Calculate Weights: exp(-(E - Ef)^2 / (2*sigma^2))
     # Gaussian weights are more standard for 'sigma' parameter
