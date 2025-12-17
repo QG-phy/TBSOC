@@ -4,9 +4,10 @@
 
 ## Key Features
 - **High Performance**: Powered by **JAX** and **Just-In-Time (JIT)** compilation for lightning-fast fitting (<1s for typical systems).
-- **Auto-Alignment**: Automatically detects the correct matching between TB and DFT bands (handles band index offsets).
-- **Physically-Aware**: Uses **Fermi-weighted loss** to prioritize accuracy near the Fermi level.
+- **Auto-Alignment**: Automatically detects the correct matching between TB and DFT bands, including partial band overlap when DFT has fewer bands than TB.
+- **Physically-Aware**: Uses **Gaussian-weighted loss** centered at the Fermi level to prioritize accuracy near the Fermi surface.
 - **Differentiable**: Uses exact gradients (Automatic Differentiation) for robust convergence, replacing slow derivative-free methods.
+- **Non-Negative Constraints**: Enforces physically meaningful $\lambda \geq 0$ during optimization.
 - **Flexible**: Supports custom local axes and spin quantization axes.
 
 ## Installation
@@ -29,11 +30,11 @@ pip install .
 
 ## 🖥️ Desktop GUI Application
 
-TBSOC now includes a standalone desktop application for easier configuration and fitting.
+TBSOC includes a modern web-based desktop application for interactive parameter tuning and real-time visualization.
 
 ### Prerequisites
 - Ensure `uv` is installed.
-- Ensure `npm` (Node.js) is installed (only for building frontend, if modifying).
+- Frontend is pre-built and included in the repository.
 
 ### How to Run
 1. **Install Dependencies**:
@@ -45,17 +46,26 @@ TBSOC now includes a standalone desktop application for easier configuration and
    ```bash
    uv run python -m tbsoc.server.main
    ```
-   This will open a native window with the TBSOC interface.
+   This will start a local server and open the GUI in your default browser at `http://localhost:8000`.
 
-### Features
-- **Parameter Editor**: Configure `POSCAR`, `EIGENVAL`, and `Lambdas` visually.
-- **Auto-Fit**: Run the JAX-accelerated fitting directly from the GUI.
+### GUI Features
+- **Interactive Parameter Editor**: 
+  - Configure file paths (POSCAR, EIGENVAL, Wannier90 files)
+  - Set Fermi energy and weighting parameters
+  - Adjust SOC parameters ($\lambda$) with live sliders
+- **Real-Time Band Visualization**: 
+  - Overlay TB+SOC bands (red) on DFT reference (blue dashed)
+  - Visualize Gaussian weighting function
+  - Auto-aligned k-point labels and high-symmetry points
+- **Live Preview Mode**: Drag sliders to instantly see band structure changes
+- **One-Click Fitting**: Run JAX-accelerated optimization with progress tracking
+- **Partial Band Support**: Handles cases where DFT calculations have fewer bands than the TB model
 
 ---
 
 ## 🚀 Usage (Command Line)
 
-TBSOC provides a command-line interface (`tbsoc`) with three main modes:
+TBSOC provides a command-line interface (`tbsoc`) with four main modes:
 
 ### 1. Pre-calculate (`precalc`)
 Converts `wannier90_hr.dat` to a more efficient format.
@@ -69,9 +79,14 @@ Automatically fits the SOC parameters ($\lambda$) to match a DFT band structure 
 tbsoc fit input.json
 ```
 **Key `input.json` parameters:**
-- `lambdas`: Initial guess for SOC strengths (e.g., `[0, 0.1, 0]`). Zero values are fixed; non-zero are optimized.
+- `lambdas`: Initial guess for SOC strengths (dict format: `{"Ga:p": 0.1, "As:p": 0.05}` or list). Zero values are fixed; non-zero are optimized.
 - `Efermi`: DFT Fermi Energy (eV).
-- `weight_sigma`: (Optional) Width of the Fermi weighting window (default: 2.0 eV).
+- `weight_sigma`: (Optional) Standard deviation of Gaussian weighting (default: 2.0 eV).
+
+**New in this version:**
+- Automatically handles partial band overlap (when DFT has fewer bands than TB)
+- Uses bottom-half band alignment heuristic for robust matching
+- Enforces $\lambda \geq 0$ constraints
 
 ### 3. Add SOC (`addsoc`)
 Calculates the final bands with specific SOC parameters and plots the result.
@@ -79,19 +94,30 @@ Calculates the final bands with specific SOC parameters and plots the result.
 tbsoc addsoc input.json
 ```
 
+### 4. Plot (`plot`)
+Generate static band structure plots from fitted results.
+```bash
+tbsoc plot input.json
+```
+
 ## Input File Format (`input.json`)
-See `example/` directory for complete examples (GaAs, TaAs, etc.).
+See `example/` directory for complete examples (GaAs, Si, TaAs, etc.).
 ```json
 {
-    "lambdas": [0, 0.1, 0],
+    "lambdas": {"Ga:p": 0.1, "As:p": 0.05},
     "Efermi": 4.0815,
-    "vasp_bands_file": "EIGENVAL",
-    "orbitals": ["Ga", "As"],
-    "orb_type": [1, 1],
-    "orb_num": [3, 3],
-    ...
+    "weight_sigma": 2.0,
+    "EMIN": -10,
+    "EMAX": 10
 }
 ```
+
+## Recent Improvements
+- **Partial Band Fitting**: Robust alignment when DFT band count < TB band count
+- **Gaussian Weighting**: More physically meaningful energy window weighting
+- **GUI Enhancements**: Removed structure viewer, optimized layout for band visualization
+- **Non-Negative Constraints**: Ensures $\lambda \geq 0$ during optimization
+- **Improved Alignment**: Bottom-half band matching heuristic for better convergence
 
 ## Cite
 If you use this code, please cite our paper:
