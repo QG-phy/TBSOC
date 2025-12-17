@@ -164,7 +164,7 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weight
     });
 
     return (
-        <div style={{width: '100%', height: '100%'}}>
+        <div style={{position: 'relative', width: '100%', height: '100%'}}>
             <Plot
                 data={traces}
                 layout={{
@@ -227,7 +227,7 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weight
                     
                     shapes: shapes,
                     template: 'plotly_white',
-                    margin: {l: 60, r: 20, t: 20, b: 50}, 
+                    margin: {l: 50, r: 10, t: 20, b: 30}, // Reduced margins
                     paper_bgcolor: 'white',
                     plot_bgcolor: 'white',
                     font: { family: 'Arial, sans-serif', size: 14, color: 'black' }

@@ -8,8 +8,8 @@ function VisualizationDashboard({
     weightSigma 
 }) {
     return (
-        <div className="h-full w-full flex flex-col p-4">
-            <div className="flex-1 min-h-0 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div style={{height: '100%', width: '100%', display: 'flex', flexDirection: 'column'}}>
+            <div style={{flex: 1, minHeight: 0, background: 'white', overflow: 'hidden', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', borderRadius: '0.5rem'}}>
                 <BandPlot 
                     lambdas={lambdas}
                     runTrigger={runTrigger}

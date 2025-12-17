@@ -129,7 +129,7 @@ function App() {
                 onStopFit={handleStopFit}
             />
           </div>
-          <div style={{flex: 1, minWidth: 0}}>
+          <div style={{flex: 1, minWidth: 0, height: '100%'}}>
             <VisualizationDashboard 
                 lambdas={activeLambdas} 
                 runTrigger={runTrigger} 
