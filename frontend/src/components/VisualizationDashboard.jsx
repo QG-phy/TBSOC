@@ -2,14 +2,14 @@ import React from 'react';
 import BandPlot from './BandPlot';
 import StructureViewer from './StructureViewer';
 
-export default function VisualizationDashboard({ lambdas, runTrigger, fermiLevel }) {
+export default function VisualizationDashboard({ lambdas, runTrigger, fermiLevel, weightSigma }) {
     const [showStructure, setShowStructure] = React.useState(false);
 
     return (
         <div style={{display: 'flex', flexDirection: 'column', height: '100%', gap: '15px'}}>
             <div className="card" style={{flex: 1, minHeight: '300px', display: 'flex', flexDirection: 'column', padding: '10px'}}>
                  {/* Band Plot */}
-                 <BandPlot lambdas={lambdas} runTrigger={runTrigger} fermiLevel={fermiLevel} />
+                 <BandPlot lambdas={lambdas} runTrigger={runTrigger} fermiLevel={fermiLevel} weightSigma={weightSigma} />
             </div>
             
             <div className="card" style={{flex: showStructure ? 1 : '0 0 auto', minHeight: showStructure ? '300px' : 'auto', display: 'flex', flexDirection: 'column', padding: '10px', transition: 'all 0.3s ease'}}>

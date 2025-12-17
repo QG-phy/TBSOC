@@ -34,11 +34,13 @@ function App() {
   const [status, setStatus] = useState("Idle");
   const [activeLambdas, setActiveLambdas] = useState([]); 
   const [activeFermi, setActiveFermi] = useState(0.0);
+  const [activeSigma, setActiveSigma] = useState(2.0);
   const [runTrigger, setRunTrigger] = useState(0);
 
   const runFit = async (data) => {
     setStatus("Submitting...");
     setActiveFermi(parseFloat(data.Efermi) || 0.0);
+    setActiveSigma(parseFloat(data.weight_sigma) || 2.0);
     try {
         const res = await fetch('/api/fit', {
             method: 'POST',
@@ -89,6 +91,7 @@ function App() {
       console.log("Previewing with:", formData.lambdas);
       setActiveLambdas(formData.lambdas);
       setActiveFermi(parseFloat(formData.Efermi) || 0.0);
+      setActiveSigma(parseFloat(formData.weight_sigma) || 2.0);
       setRunTrigger(prev => prev + 1); // Trigger refresh
       setStatus("Previewing...");
   };
@@ -127,7 +130,12 @@ function App() {
             />
           </div>
           <div style={{flex: 1, minWidth: 0}}>
-            <VisualizationDashboard lambdas={activeLambdas} runTrigger={runTrigger} fermiLevel={activeFermi} />
+            <VisualizationDashboard 
+                lambdas={activeLambdas} 
+                runTrigger={runTrigger} 
+                fermiLevel={activeFermi} 
+                weightSigma={activeSigma}
+            />
           </div>
       </div>
     </div>
