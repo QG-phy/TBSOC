@@ -59,6 +59,8 @@ TBSOC includes a modern web-based desktop application for interactive parameter 
    ```
    This will start a local server and open the GUI in your default browser at `http://localhost:8000`.
 
+> **⚠️ macOS Users**: If you see a security warning when opening the app, see [macOS Installation Guide](docs/macOS_Installation.md) for instructions on how to safely open unsigned apps.
+
 ### GUI Features
 - **Interactive Parameter Editor**: 
   - Configure file paths (POSCAR, EIGENVAL, Wannier90 files)
