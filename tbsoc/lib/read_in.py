@@ -114,12 +114,15 @@ def read_poscar_wan_in(poscarfile = 'POSCAR',waninfile='wannier90.win'):
     for iatom in spec:
         for i in range(projind[0]+1,projind[1]):       
             if re.search(iatom,wan[i]):
-                if re.search('l',wan[i]):
-                    atom_proj[iatom]=re.findall(r"\d+",wan[i])
-                    proj_type += len(re.findall(r"\d+",wan[i]))
+                # Use regex to specifically find l=<number> to avoid matching axis coordinates
+                l_matches = re.findall(r"l\s*=\s*(\d+)", wan[i])
+                if l_matches:
+                    atom_proj[iatom] = l_matches
+                    proj_type += len(l_matches)
                 else:
-                    print('The style to set orb in  wannier90.win can not be recognized') 
-                    print( 'only be read in the style with l=1,2,3 ...')
+                    print(f"Warning: No 'l=' definitions found in projection line for {iatom}: {wan[i].strip()}")
+                    # print('The style to set orb in wannier90.win can not be recognized') 
+                    # print( 'only be read in the style with l=1,2,3 ...')
                 break # Found projection for this species
 
     # 2. Filter atoms and coords to keep only projected ones
