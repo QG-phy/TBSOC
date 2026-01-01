@@ -230,7 +230,8 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weight
                     font: { family: 'Inter, sans-serif', size: 14, color: '#D9E0EE' },
                     annotations: mae !== null ? [{
                         xref: 'paper', yref: 'paper',
-                        x: 0.02, y: 0.98,
+                        x: 0.98, y: 0.98, 
+                        xanchor: 'right',
                         text: `MAE: ${mae.toFixed(4)} eV`,
                         showarrow: false,
                         font: { size: 14, color: '#42D392', family: 'JetBrains Mono, monospace' },
@@ -238,7 +239,7 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weight
                         borderpad: 6,
                         bordercolor: '#42D392',
                         borderwidth: 1,
-                        align: 'left'
+                        align: 'right'
                     }] : []
                 }}
                 useResizeHandler={true}
