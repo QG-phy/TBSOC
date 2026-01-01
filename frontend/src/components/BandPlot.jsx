@@ -60,7 +60,7 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weight
                  yaxis: 'y',
                  type: 'scatter',
                  mode: 'lines',
-                 line: { color: 'blue', width: 2, dash: 'dash' },
+                 line: { color: '#89B4FA', width: 2, dash: 'dash' },
                  name: i === 0 ? 'DFT (VASP)' : '',
                  showlegend: i === 0,
                  hoverinfo: 'y',
@@ -80,7 +80,7 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weight
                  yaxis: 'y',
                  type: 'scatter',
                  mode: 'lines',
-                 line: { color: 'red', width: 1.5, dash: 'solid' },
+                 line: { color: '#F38BA8', width: 1.5, dash: 'solid' },
                  name: i === 0 ? 'TB+SOC' : '',
                  showlegend: i === 0,
                  hoverinfo: 'y'
