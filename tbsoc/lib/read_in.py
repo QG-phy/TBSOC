@@ -109,6 +109,8 @@ def read_poscar_wan_in(poscarfile = 'POSCAR',waninfile='wannier90.win'):
             break
     atom_proj={}
     proj_type=0
+    
+    # 1. Identify projected species
     for iatom in spec:
         for i in range(projind[0]+1,projind[1]):       
             if re.search(iatom,wan[i]):
@@ -118,6 +120,24 @@ def read_poscar_wan_in(poscarfile = 'POSCAR',waninfile='wannier90.win'):
                 else:
                     print('The style to set orb in  wannier90.win can not be recognized') 
                     print( 'only be read in the style with l=1,2,3 ...')
+                break # Found projection for this species
+
+    # 2. Filter atoms and coords to keep only projected ones
+    filtered_atoms = []
+    filtered_coords = []
+    
+    print(f"Filtering POSCAR atoms based on projections: Keeping {list(atom_proj.keys())}")
+    
+    for k, atom in enumerate(atoms):
+        if atom in atom_proj:
+            filtered_atoms.append(atom)
+            filtered_coords.append(coords[k])
+            
+    atoms = filtered_atoms
+    coords = np.array(filtered_coords)
+    
+    # 3. Update spec to only include projected species (preserving order)
+    spec = [s for s in spec if s in atom_proj]
     
 
 
