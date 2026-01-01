@@ -165,17 +165,25 @@ class DataManager:
                 # vasp_bands is (nk, n_dft)
                 dft_subset = vasp_bands[:, offset : offset + n_compare]
                 
-                # 2. Get TB subset (first n_compare bands usually, assuming TB maps to lowest available if index 0)
-                # TB bands are usually fewer than DFT, so typically we map TB[0] to DFT[offset]
+                # 2. Get TB subset
                 tb_subset = eigvals[:, :n_compare]
                 
-                # 3. Calculate mean difference
+                # 3. Calculate mean difference for alignment (signed)
                 mean_diff = np.mean(tb_subset - dft_subset)
                 
                 # 4. Apply shift
                 eigvals_shifted = eigvals - mean_diff
-                return eigvals_shifted.T.tolist()
+                
+                # 5. Calculate MAE (Mean Absolute Error) for aligned bands
+                # MAE = mean(|TB_aligned - DFT|)
+                # Note: We use the same subset used for alignment
+                mae = float(np.mean(np.abs(eigvals_shifted[:, :n_compare] - dft_subset)))
+                
+                return {
+                    "bands": eigvals_shifted.T.tolist(),
+                    "mae": mae
+                }
         except Exception as e:
-            print(f"Warning: Alignment failed in calculate_tb_bands: {e}")
+            print(f"Warning: Alignment/MAE calculation failed: {e}")
             
-        return eigvals.T.tolist() # Fallback to raw if alignment fails
+        return {"bands": eigvals.T.tolist(), "mae": None} # Fallback

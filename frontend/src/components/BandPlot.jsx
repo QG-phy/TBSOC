@@ -4,6 +4,7 @@ import Plot from './PlotlyComponent';
 export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weightSigma = 2.0 }) {
     const [dftData, setDftData] = useState(null);
     const [tbData, setTbData] = useState(null);
+    const [mae, setMae] = useState(null);
     const [loading, setLoading] = useState(false);
 
     // Load DFT bands on mount or refresh
@@ -30,6 +31,7 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weight
         .then(res => res.json())
         .then(data => {
             setTbData(data.bands);
+            setMae(data.mae);
             setLoading(false);
         })
         .catch(err => {
@@ -168,13 +170,12 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weight
             <Plot
                 data={traces}
                 layout={{
-                    title: { text: null }, // Remove title to save space or keep simple
+                    title: { text: null }, 
                     autosize: true,
                     showlegend: true,
-                    legend: {x: 0, xanchor: 'left', y: 1, bgcolor: 'rgba(255,255,255,0.8)', bordercolor: '#ccc', borderwidth: 1},
+                    legend: {x: 0, xanchor: 'left', y: 1, bgcolor: 'rgba(30,30,46,0.8)', bordercolor: '#313244', borderwidth: 1, font: {color: '#D9E0EE'}},
                     
                     // --- Axis Definitions ---
-                    // Left Plot (Bands) - 78% width
                     xaxis: {
                         domain: [0, 0.78],
                         range: dftData ? [dftData.k_distance[0], dftData.k_distance[dftData.k_distance.length - 1]] : undefined,
@@ -185,52 +186,60 @@ export default function BandPlot({ lambdas, runTrigger, fermiLevel = 0.0, weight
                         mirror: true,
                         ticks: 'inside',
                         showline: true,
-                        linecolor: 'black',
+                        linecolor: '#6E738D',
+                        tickcolor: '#6E738D',
                         linewidth: 1.5,
-                        tickfont: { size: 14 }
+                        tickfont: { size: 14, color: '#D9E0EE' }
                     },
                     yaxis: {
-                        title: { text: 'E (eV)', font: { size: 16 }, standoff: 10 },
-                        // domain: [0, 1] is default
+                        title: { text: 'E (eV)', font: { size: 16, color: '#D9E0EE' }, standoff: 10 },
                         zeroline: false,
                         showgrid: false,
                         mirror: true,
                         ticks: 'inside',
                         showline: true,
-                        linecolor: 'black',
+                        linecolor: '#6E738D',
+                        tickcolor: '#6E738D',
                         linewidth: 1.5,
-                        tickfont: { size: 14 }
+                        tickfont: { size: 14, color: '#D9E0EE' }
                     },
                     
-                    // Right Plot (Weights) - 18% width (gap 4%)
                     xaxis2: {
                         domain: [0.82, 1.0],
-                        title: { text: 'Weight', font: { size: 12 }, standoff: 0 },
+                        title: { text: 'Weight', font: { size: 12, color: '#D9E0EE' }, standoff: 0 },
                         range: [0, 1.05],
                         zeroline: false,
                         showgrid: true,
+                        gridcolor: '#313244',
                         dtick: 0.5,
                         mirror: true,
                         ticks: 'inside',
                         showline: true,
-                        linecolor: 'black',
+                        linecolor: '#6E738D',
+                        tickcolor: '#6E738D',
                         linewidth: 1.5,
-                        tickfont: { size: 12 },
-                        side: 'bottom' // Align with bottom
+                        tickfont: { size: 12, color: '#D9E0EE' },
+                        side: 'bottom'
                     },
-                    // We reuse 'yaxis' for the right plot (shared), 
-                    // Plotly handles sharing automatically if we point trace to 'y'.
-                    // But to have right-side axis lines/ticks for the 2nd plot, we strictly should probably duplicate yaxis or rely on mirror.
-                    // 'mirror: true' on yaxis puts ticks on the right of the FIRST domain (0.78), not the far right.
-                    // To get a box around the second plot, we might need yaxis2 overlaid or just accept open left side.
-                    // Let's try simple shared Y first. The trace points to yaxis='y'.
                     
                     shapes: shapes,
-                    template: 'plotly_white',
-                    margin: {l: 50, r: 10, t: 20, b: 30}, // Reduced margins
-                    paper_bgcolor: 'white',
-                    plot_bgcolor: 'white',
-                    font: { family: 'Arial, sans-serif', size: 14, color: 'black' }
+                    template: 'plotly_dark',
+                    margin: {l: 50, r: 10, t: 20, b: 30},
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { family: 'Inter, sans-serif', size: 14, color: '#D9E0EE' },
+                    annotations: mae !== null ? [{
+                        xref: 'paper', yref: 'paper',
+                        x: 0.02, y: 0.98,
+                        text: `MAE: ${mae.toFixed(4)} eV`,
+                        showarrow: false,
+                        font: { size: 14, color: '#42D392', family: 'JetBrains Mono, monospace' },
+                        bgcolor: 'rgba(30,30,46,0.9)',
+                        borderpad: 6,
+                        bordercolor: '#42D392',
+                        borderwidth: 1,
+                        align: 'left'
+                    }] : []
                 }}
                 useResizeHandler={true}
                 style={{width: '100%', height: '100%', minHeight: '300px'}}

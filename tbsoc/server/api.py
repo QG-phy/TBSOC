@@ -149,10 +149,10 @@ async def get_dft_bands():
 @router.post("/bands/tb")
 async def get_tb_bands(req: TBBandsRequest):
     try:
-        bands = state.data_manager.calculate_tb_bands(req.lambdas)
-        if bands is None:
+        result = state.data_manager.calculate_tb_bands(req.lambdas)
+        if result is None:
              raise HTTPException(status_code=400, detail="Data not loaded")
-        return {"bands": bands}
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
