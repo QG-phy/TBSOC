@@ -272,7 +272,7 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, 
         </div>
 
         <div style={{display: 'flex', gap: '10px', marginTop: '30px'}}>
-             <button type="button" onClick={handlePreview} style={{flex: 1, background: '#333', border: '1px solid #555'}}>Preview Bands</button>
+             <button type="button" onClick={handlePreview} style={{flex: 1, background: 'var(--button-bg)', color: 'var(--button-text)', border: '1px solid var(--border-color)'}}>Preview Bands</button>
              {isFitting ? (
                  <button type="button" onClick={onStopFit} style={{flex: 1, background: '#ff6b6b', fontWeight: 'bold'}}>Stop Fitting</button>
              ) : (

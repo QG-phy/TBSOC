@@ -7,21 +7,22 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
-  /* Default variables (Dark Theme Fallback) */
-  --bg-body: linear-gradient(135deg, #1e1e2e 0%, #16161e 100%);
-  --bg-card: #252538;
-  --bg-card-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  --text-main: rgba(255, 255, 255, 0.87);
-  --text-muted: #888;
-  --border-color: #313244;
-  --input-bg: #2a2a2a;
-  --input-border: #3a3a3a;
-  --button-bg: #1a1a1a;
+  color-scheme: light;
+  /* Default variables (Light Theme Fallback) */
+  --bg-body: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  --bg-card: #ffffff;
+  --bg-card-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  --text-main: #2c3e50;
+  --text-muted: #666;
+  --border-color: #e0e0e0;
+  --input-bg: #ffffff;
+  --input-border: #ccc;
+  --button-bg: #e0e0e0;
+  --button-text: #333;
   --button-hover-border: #646cff; /* Keep as is or variable */
   
   color: var(--text-main);
-  background-color: #1a1a1a; /* Fallback */
+  background-color: #f5f7fa; /* Fallback */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

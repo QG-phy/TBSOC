@@ -39,7 +39,7 @@ function App() {
   const [dataVersion, setDataVersion] = useState(0); // Trigger for data reload
   
   // Theme State
-  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('theme') || 'Dark');
+  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('theme') || 'Light');
   const [themeConfig, setThemeConfig] = useState(null);
 
   // Load Theme
