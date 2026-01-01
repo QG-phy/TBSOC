@@ -168,7 +168,7 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, 
                 <span style={{fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block'}}>Working Directory</span>
                 <span style={{fontFamily: 'monospace', fontSize: '0.9rem'}} title={currentPath}>{currentPath || "Loading..."}</span>
             </div>
-            <button type="button" onClick={handleOpenFolder} style={{flexShrink: 0, padding: '6px 12px', fontSize: '0.85rem'}}>Open Folder</button>
+            <button type="button" onClick={handleOpenFolder} style={{flexShrink: 0, padding: '6px 12px', fontSize: '0.85rem', background: 'var(--button-bg)', color: 'var(--button-text)', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer'}}>Open Folder</button>
         </div>
         
         <div style={{flex: 1}}>
