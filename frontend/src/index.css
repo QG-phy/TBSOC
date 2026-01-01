@@ -4,8 +4,20 @@
   font-weight: 400;
 
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #1a1a1a;
+  /* Default variables (Dark Theme Fallback) */
+  --bg-body: linear-gradient(135deg, #1e1e2e 0%, #16161e 100%);
+  --bg-card: #252538;
+  --bg-card-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  --text-main: rgba(255, 255, 255, 0.87);
+  --text-muted: #888;
+  --border-color: #313244;
+  --input-bg: #2a2a2a;
+  --input-border: #3a3a3a;
+  --button-bg: #1a1a1a;
+  --button-hover-border: #646cff; /* Keep as is or variable */
+  
+  color: var(--text-main);
+  background-color: #1a1a1a; /* Fallback */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -19,19 +31,21 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1e1e2e 0%, #16161e 100%);
-  overflow-y: auto; /* Allow scrolling if content is tall */
+  background: var(--bg-body);
+  color: var(--text-main);
+  overflow-y: auto;
 }
 
 input, button {
   position: relative;
   z-index: 10;
-  -webkit-app-region: no-drag; /* Ensure inputs are not treated as drag handles */
+  -webkit-app-region: no-drag;
 }
 
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  /* Gradient text support */
   background: -webkit-linear-gradient(315deg, #42d392 25%, #647eff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -44,12 +58,12 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--button-bg);
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--button-hover-border);
 }
 button:focus,
 button:focus-visible {
@@ -57,9 +71,9 @@ button:focus-visible {
 }
 
 input {
-  background-color: #2a2a2a;
-  border: 1px solid #3a3a3a;
-  color: white;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-main);
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 14px;
@@ -74,9 +88,9 @@ input:focus {
 
 .card {
   padding: 2em;
-  background-color: #2a2a2a;
+  background-color: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  box-shadow: var(--bg-card-shadow);
 }
 
 .container {

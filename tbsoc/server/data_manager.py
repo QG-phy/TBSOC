@@ -1,7 +1,7 @@
 from tbsoc.entrypoints.loadall import load_all_data
 from tbsoc.lib.soc_mat import get_Hsoc
 from tbsoc.lib.cal_tools import hr2hk
-from tbsoc.entrypoints.fitsoc import build_soc_basis_matrices
+from tbsoc.entrypoints.fitsoc import build_soc_basis_matrices, find_best_alignment
 import numpy as np
 import jax.numpy as jnp
 import os
@@ -69,13 +69,7 @@ class DataManager:
         n_dft = vasp_bands.shape[1]
         n_k = vasp_bands.shape[0]
         
-        # We need find_best_alignment here. 
-        # Note: Importing inside method to avoid circular import if needed, or top level.
-        # Assuming top level import is safe (loadall imports fitsoc, but fitsoc imports soc_mat...)
-        # find_best_alignment is in fitsoc.
-        
         print("DataManager: Aligning bands...")
-        from tbsoc.entrypoints.fitsoc import find_best_alignment
         best_offset, min_mse = find_best_alignment(eigvals, vasp_bands, n_wan, n_dft, n_k)
         self.best_offset = best_offset
         
@@ -130,7 +124,8 @@ class DataManager:
             "kpath": self.data_dict['kpath'].tolist(),
             "k_distance": self.data_dict['xpath'].tolist(),
             "k_ticks": self.data_dict['xsymm'].tolist(),
-            "k_labels": self.data_dict['plot_sbol']
+            "k_labels": self.data_dict['plot_sbol'],
+            "offset": offset
         }
 
     def calculate_tb_bands(self, lambdas_list):
@@ -138,10 +133,6 @@ class DataManager:
         if self.hk_tb_jax is None: return None
         
         full_lambdas = np.array(lambdas_list)
-        
-        # We need to construct H_soc
-        # If we use the pre-calculated basis, we only have matrices for 'fit_indices'.
-        # So we must extract the values for those indices.
         
         current_params = full_lambdas[self.fit_indices]
         
@@ -153,37 +144,47 @@ class DataManager:
             
         eigvals = jnp.linalg.eigvalsh(h_total) # (nk, n_wan)
         
+        # Create numpy copy for alignment search
+        eigvals_np = np.array(eigvals)
+
+        # --- Dynamic Re-Alignment ---
+        # The user requested that we re-search the window when lambdas change.
+        if self.data_dict:
+            vasp_bands = self.data_dict['vasp_bands']
+            n_dft = self.n_dft
+            n_wan = self.n_wan
+            n_k = vasp_bands.shape[0]
+            
+            # Re-scan for best index
+            best_offset, min_mse = find_best_alignment(eigvals_np, vasp_bands, n_wan, n_dft, n_k)
+            
+            # Update state if changed
+            if best_offset != self.best_offset:
+                # print(f"DataManager: Re-alignment changed offset from {self.best_offset} to {best_offset}")
+                self.best_offset = best_offset
+                self.n_compare = min(n_wan, n_dft - best_offset)
+
         # --- Apply Alignment Shift ---
-        # Align TB bands to DFT bands using mean difference, similar to tutorial logic
         try:
             vasp_bands = self.data_dict['vasp_bands']
             offset = getattr(self, 'best_offset', 0)
             n_compare = getattr(self, 'n_compare', 0)
             
             if n_compare > 0:
-                # 1. Get DFT subset (target)
-                # vasp_bands is (nk, n_dft)
                 dft_subset = vasp_bands[:, offset : offset + n_compare]
-                
-                # 2. Get TB subset
                 tb_subset = eigvals[:, :n_compare]
                 
-                # 3. Calculate mean difference for alignment (signed)
                 mean_diff = np.mean(tb_subset - dft_subset)
-                
-                # 4. Apply shift
                 eigvals_shifted = eigvals - mean_diff
                 
-                # 5. Calculate MAE (Mean Absolute Error) for aligned bands
-                # MAE = mean(|TB_aligned - DFT|)
-                # Note: We use the same subset used for alignment
                 mae = float(np.mean(np.abs(eigvals_shifted[:, :n_compare] - dft_subset)))
                 
                 return {
                     "bands": eigvals_shifted.T.tolist(),
-                    "mae": mae
+                    "mae": mae,
+                    "offset": int(offset)
                 }
         except Exception as e:
             print(f"Warning: Alignment/MAE calculation failed: {e}")
             
-        return {"bands": eigvals.T.tolist(), "mae": None} # Fallback
+        return {"bands": eigvals.T.tolist(), "mae": None, "offset": getattr(self, 'best_offset', 0)}

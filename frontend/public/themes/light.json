@@ -1,0 +1,40 @@
+{
+  "name": "Light",
+  "css": {
+    "--bg-body": "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+    "--bg-card": "#ffffff",
+    "--bg-card-shadow": "0 4px 6px rgba(0,0,0,0.1)",
+    "--text-main": "#2c3e50",
+    "--text-muted": "#666",
+    "--border-color": "#e0e0e0",
+    "--input-bg": "#ffffff",
+    "--input-border": "#ccc",
+    "--button-bg": "#f0f0f0",
+    "--button-hover-border": "#646cff",
+    "--bg-secondary": "#f8f9fa",
+    "--bg-item": "#f0f0f0",
+    "--text-secondary": "#666",
+    "--input-bg-subtle": "#fff"
+  },
+  "plot": {
+    "template": "plotly_white",
+    "colors": {
+       "dft": "#0055aa",
+       "tb": "#d32f2f",
+       "weight": "#2e7d32",
+       "weight_fill": "rgba(46, 125, 50, 0.2)",
+       "fermi": "#666",
+       "grid": "#ddd"
+    },
+    "layout": {
+       "font": { "family": "Inter, sans-serif", "size": 14, "color": "#2c3e50" },
+       "legend_bg": "rgba(255,255,255,0.8)",
+       "legend_border": "#ccc",
+       "mae_text": "#2e7d32",
+       "mae_bg": "rgba(255,255,255,0.9)",
+       "mae_border": "#2e7d32",
+       "axis_line": "#666",
+       "grid_color": "#eee"
+    }
+  }
+}

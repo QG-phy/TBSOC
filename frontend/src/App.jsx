@@ -36,6 +36,33 @@ function App() {
   const [activeFermi, setActiveFermi] = useState(0.0);
   const [activeSigma, setActiveSigma] = useState(2.0);
   const [runTrigger, setRunTrigger] = useState(0);
+  const [dataVersion, setDataVersion] = useState(0); // Trigger for data reload
+  
+  // Theme State
+  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('theme') || 'Dark');
+  const [themeConfig, setThemeConfig] = useState(null);
+
+  // Load Theme
+  React.useEffect(() => {
+    fetch(`/themes/${currentTheme.toLowerCase()}.json`)
+      .then(res => res.json())
+      .then(config => {
+        setThemeConfig(config);
+        // Apply CSS variables
+        if (config.css) {
+            Object.entries(config.css).forEach(([key, value]) => {
+                document.documentElement.style.setProperty(key, value);
+            });
+        }
+        localStorage.setItem('theme', currentTheme);
+      })
+      .catch(err => console.error("Failed to load theme:", err));
+  }, [currentTheme]);
+
+  const handleDataLoaded = () => {
+       console.log("Data loaded, updating version");
+       setDataVersion(v => v + 1);
+  };
 
   const runFit = async (data) => {
     setStatus("Submitting...");
@@ -116,6 +143,22 @@ function App() {
             <div style={{padding: '2px 8px', background: '#333', borderRadius: '4px', fontSize: '0.8rem'}}>
                 Status: <span style={{color: status.includes('Error') ? '#ff6b6b' : '#42d392'}}>{status}</span>
             </div>
+            <select 
+                value={currentTheme} 
+                onChange={(e) => setCurrentTheme(e.target.value)}
+                style={{
+                    marginLeft: '10px',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--input-bg)',
+                    color: 'var(--text-main)',
+                    fontSize: '0.9rem'
+                }}
+            >
+                <option value="Dark">Dark Mode</option>
+                <option value="Light">Light Mode</option>
+            </select>
         </div>
       </header>
       
@@ -124,6 +167,7 @@ function App() {
             <ParameterEditor 
                 onRunFit={runFit} 
                 onPreview={handlePreview} 
+                onDataLoaded={handleDataLoaded}
                 externalLambdas={activeLambdas} 
                 isFitting={status.startsWith("Fitting") || status === "Submitting..."}
                 onStopFit={handleStopFit}
@@ -133,8 +177,10 @@ function App() {
             <VisualizationDashboard 
                 lambdas={activeLambdas} 
                 runTrigger={runTrigger} 
+                dataVersion={dataVersion}
                 fermiLevel={activeFermi} 
                 weightSigma={activeSigma}
+                themeConfig={themeConfig}
             />
           </div>
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, isFitting, onStopFit }) {
+export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, isFitting, onStopFit, onDataLoaded }) {
   const [formData, setFormData] = useState({
     posfile: 'POSCAR',
     winfile: 'wannier90.win',
@@ -72,6 +72,10 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, 
     })
     .then(res => res.json())
     .then(data => {
+        if (data.status === 'loaded' && onDataLoaded) {
+             onDataLoaded();
+        }
+        
         if (data.orb_labels && data.orb_labels.length > 0) {
             // Check if labels changed, indicating a new system or file load
             const labelsChanged = JSON.stringify(data.orb_labels) !== JSON.stringify(lambdaLabels);
@@ -159,9 +163,9 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, 
         <h2 style={{marginTop: 0}}>Configuration</h2>
 
         {/* Project Folder Selection */}
-        <div style={{marginBottom: '20px', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+        <div style={{marginBottom: '20px', padding: '10px', background: 'var(--bg-secondary)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
             <div style={{overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', marginRight: '10px', flex: 1}}>
-                <span style={{fontSize: '0.75rem', color: '#aaa', display: 'block'}}>Working Directory</span>
+                <span style={{fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block'}}>Working Directory</span>
                 <span style={{fontFamily: 'monospace', fontSize: '0.9rem'}} title={currentPath}>{currentPath || "Loading..."}</span>
             </div>
             <button type="button" onClick={handleOpenFolder} style={{flexShrink: 0, padding: '6px 12px', fontSize: '0.85rem'}}>Open Folder</button>
@@ -170,7 +174,7 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, 
         <div style={{flex: 1}}>
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
                 <div style={{gridColumn: '1 / -1'}}>
-                <h3 style={{fontSize: '1rem', marginTop: '10px', marginBottom: '5px', color: '#aaa'}}>Input Files</h3>
+                <h3 style={{fontSize: '1rem', marginTop: '10px', marginBottom: '5px', color: 'var(--text-secondary)'}}>Input Files</h3>
                 </div>
                 
                 <label style={{display: 'block'}}>
@@ -189,7 +193,7 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, 
             
             <div style={{marginTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
             <div style={{gridColumn: '1 / -1'}}>
-                <h3 style={{fontSize: '1rem', marginTop: '0', marginBottom: '5px', color: '#aaa'}}>Parameters</h3>
+                <h3 style={{fontSize: '1rem', marginTop: '0', marginBottom: '5px', color: 'var(--text-secondary)'}}>Parameters</h3>
                 </div>
             <label>
                 <span style={{fontSize: '0.85rem', display: 'block', marginBottom: '4px'}}>Fermi Energy (eV)</span>
@@ -202,12 +206,12 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, 
             </div>
 
             <div style={{marginTop: '20px'}}>
-                <h3 style={{fontSize: '1rem', marginTop: '0', marginBottom: '10px', color: '#aaa', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                <h3 style={{fontSize: '1rem', marginTop: '0', marginBottom: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                     <span>
                         Lambdas (Live Tuning)
-                        <span style={{fontSize: '0.7em', color: '#666', marginLeft: '10px'}}>Drag sliders to update plot</span>
+                        <span style={{fontSize: '0.7em', color: 'var(--text-secondary)', marginLeft: '10px'}}>Drag sliders to update plot</span>
                     </span>
-                    <label style={{display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.8em', color: '#ddd'}}>
+                    <label style={{display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.8em', color: 'var(--text-main)'}}>
                         <input
                             type="checkbox"
                             checked={liveUpdate}
@@ -225,13 +229,13 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, 
                     if (isS) return null;
 
                     return (
-                        <div key={idx} style={{background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '6px'}}>
+                        <div key={idx} style={{background: 'var(--bg-item)', padding: '10px', borderRadius: '6px'}}>
                             <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '5px'}}>
-                                <label style={{fontSize: '0.85rem', fontWeight: 'bold', color: '#ddd'}}>
+                                <label style={{fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-main)'}}>
                                     {label}
                                 </label>
                                 <span style={{fontSize: '0.85rem', fontFamily: 'monospace', color: '#42d392'}}>
-                                    {val.toFixed(3)}
+                                    {(typeof val === 'number') ? val.toFixed(3) : '0.000'}
                                 </span>
                             </div>
                             
@@ -254,16 +258,16 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, 
                                     step="0.01"
                                     value={val}
                                     onChange={(e) => handleLambdaChange(idx, e.target.value)}
-                                    style={{width: '70px', padding: '4px', borderRadius: '4px', border: '1px solid #555', background: '#222', color: '#fff'}}
+                                    style={{width: '70px', padding: '4px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg-subtle)', color: 'var(--text-main)'}}
                                 />
                                 
-                                <button type="button" onClick={() => removeLambda(idx)} style={{background: 'none', color: '#666', fontSize: '1.2em', border: 'none', cursor: 'pointer'}} title="Remove">×</button>
+                                <button type="button" onClick={() => removeLambda(idx)} style={{background: 'none', color: 'var(--text-muted)', fontSize: '1.2em', border: 'none', cursor: 'pointer'}} title="Remove">×</button>
                             </div>
                         </div>
                     );
                 })}
                 </div>
-                <button type="button" onClick={addLambda} style={{width: '100%', marginTop: '5px', padding: '8px', background: '#333', border: '1px dashed #555', color: '#aaa', borderRadius: '4px'}}>+ Add Optimization Parameter</button>
+                <button type="button" onClick={addLambda} style={{width: '100%', marginTop: '5px', padding: '8px', background: 'var(--button-bg)', border: '1px dashed var(--border-color)', color: 'var(--text-muted)', borderRadius: '4px'}}>+ Add Optimization Parameter</button>
             </div>
         </div>
 

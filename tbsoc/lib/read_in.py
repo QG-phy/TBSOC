@@ -114,8 +114,21 @@ def read_poscar_wan_in(poscarfile = 'POSCAR',waninfile='wannier90.win'):
     for iatom in spec:
         for i in range(projind[0]+1,projind[1]):       
             if re.search(iatom,wan[i]):
-                # Use regex to specifically find l=<number> to avoid matching axis coordinates
-                l_matches = re.findall(r"l\s*=\s*(\d+)", wan[i])
+                # Use regex to specifically find l=<value> where value can be:
+                # - digits (0,1)
+                # - words (s,p)
+                # - comma-separated lists (0,1 or s,p)
+                # - space-separated lists (if using commas as well)
+                # It stops at : or ; which are standard separators in wannier90.win
+                l_matches = []
+                # Captures digits, words, commas, hyphens, AND spaces
+                raw_matches = re.findall(r"l\s*=\s*([-\w,\s]+)", wan[i])
+                
+                for m in raw_matches:
+                    for val in m.split(','):
+                        if val.strip():
+                            l_matches.append(val.strip())
+                            
                 if l_matches:
                     atom_proj[iatom] = l_matches
                     proj_type += len(l_matches)
