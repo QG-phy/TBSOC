@@ -179,8 +179,12 @@ def read_KPOINTS(Latt,kpofile='KPOINTS'):
     for i in range(4,len(kpo)):
         #print (kpo[i])
         if re.findall(r"\-?\d+\.?\d*",kpo[i]) != []:
-            kpoints = np.array([float(ikp) for ikp in re.findall(r"\-?\d+\.?\d*",kpo[i])])
-            symbol=re.findall("[a-zA-Z]+",kpo[i])[0]
+            kpoints = np.array([float(ikp) for ikp in re.findall(r"\-?\d+\.?\d*",kpo[i])[:3]])
+            parts = kpo[i].strip().split()
+            if len(parts) >= 4:
+                symbol = parts[3].lstrip('#')
+            else:
+                symbol = 'UNK'
             khsym.append(kpoints)
             ksymbol.append(symbol)
             #print (re.findall("\d+\.?\d*",kpo[i]))
