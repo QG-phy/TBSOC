@@ -43,6 +43,8 @@ pip install .
 
 TBSOC includes a modern web-based desktop application for interactive parameter tuning and real-time visualization.
 
+![TBSOC Desktop GUI](docs/images/gui_screenshot.png)
+
 ### Prerequisites
 - Ensure `uv` is installed.
 - Frontend is pre-built and included in the repository.
@@ -63,16 +65,18 @@ TBSOC includes a modern web-based desktop application for interactive parameter 
 
 ### GUI Features
 - **Interactive Parameter Editor**: 
-  - Configure file paths (POSCAR, EIGENVAL, Wannier90 files)
+  - Configure file paths (POSCAR, EIGENVAL, Wannier90 files) with native file picker
   - Set Fermi energy and weighting parameters
   - Adjust SOC parameters ($\lambda$) with live sliders
 - **Real-Time Band Visualization**: 
   - Overlay TB+SOC bands (red) on DFT reference (blue dashed)
   - Visualize Gaussian weighting function
   - Auto-aligned k-point labels and high-symmetry points
-- **Live Preview Mode**: Drag sliders to instantly see band structure changes
-- **One-Click Fitting**: Run JAX-accelerated optimization with progress tracking
-- **Partial Band Support**: Handles cases where DFT calculations have fewer bands than the TB model
+- **Modern UI**:
+  - **Light/Dark Mode** support
+  - **Live Preview Mode**: Drag sliders to instantly see band structure changes
+  - **One-Click Fitting**: Run JAX-accelerated optimization with progress tracking
+  - **Partial Band Support**: Handles cases where DFT calculations have fewer bands than the TB model
 
 ---
 
