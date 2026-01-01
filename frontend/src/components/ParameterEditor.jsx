@@ -159,7 +159,7 @@ export default function ParameterEditor({ onRunFit, onPreview, externalLambdas, 
   };
 
   return (
-    <form className="card" style={{height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column'}}>
+    <form className="card" style={{height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', margin: 0}}>
         <h2 style={{marginTop: 0}}>Configuration</h2>
 
         {/* Project Folder Selection */}

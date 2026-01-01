@@ -11,7 +11,7 @@ function VisualizationDashboard({
 }) {
     return (
         <div style={{height: '100%', width: '100%', display: 'flex', flexDirection: 'column'}}>
-            <div style={{flex: 1, minHeight: 0, background: 'var(--bg-card)', overflow: 'hidden', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', borderRadius: '0.5rem'}}>
+            <div className="card" style={{flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '10px'}}>
                 <BandPlot 
                     lambdas={lambdas}
                     runTrigger={runTrigger}
