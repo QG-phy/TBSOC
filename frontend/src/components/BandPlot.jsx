@@ -39,19 +39,27 @@ export default function BandPlot({ lambdas, runTrigger, dataVersion, fermiLevel 
         })
         .then(res => res.json())
         .then(data => {
-            setTbData(data.bands);
-            setMae(data.mae);
-            
-            // Auto-realign: If backend found a better alignment index, reload DFT bands
+            // Auto-realign: Sync update to avoid jumping
             if (dftData && typeof data.offset !== 'undefined' && data.offset !== dftData.offset) {
                 console.log(`Alignment changed (offset ${dftData.offset} -> ${data.offset}). Reloading DFT bands...`);
                 fetch('/api/bands/dft')
                     .then(res => res.json())
-                    .then(newData => setDftData(newData))
-                    .catch(err => console.error("Failed to reload DFT bands:", err));
+                    .then(newData => {
+                        // Update BOTH to ensure frame alignment
+                        setDftData(newData);
+                        setTbData(data.bands);
+                        setMae(data.mae);
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error("Failed to reload DFT bands:", err);
+                        setLoading(false);
+                    });
+            } else {
+                setTbData(data.bands);
+                setMae(data.mae);
+                setLoading(false);
             }
-
-            setLoading(false);
         })
         .catch(err => {
             console.error("Failed to load TB bands:", err);
@@ -61,6 +69,16 @@ export default function BandPlot({ lambdas, runTrigger, dataVersion, fermiLevel 
     }, [runTrigger, lambdas]);
 
     if (!dftData) return <div style={{padding: '20px', color: 'var(--text-muted)'}}>Loading DFT Data...</div>;
+
+    // Calculate Y-Range based on DFT Data (Physics Focus)
+    let yRange = undefined;
+    if (dftData && dftData.bands) {
+        const allY = dftData.bands.flat();
+        const dftMin = Math.min(...allY);
+        const dftMax = Math.max(...allY);
+        const padding = (dftMax - dftMin) * 0.1; // 10% padding
+        yRange = [dftMin - padding, dftMax + padding];
+    }
 
     const traces = [];
 
@@ -213,6 +231,7 @@ export default function BandPlot({ lambdas, runTrigger, dataVersion, fermiLevel 
                     },
                     yaxis: {
                         title: { text: 'E (eV)', font: { size: 16, color: l.font.color }, standoff: 10 },
+                        range: yRange,
                         zeroline: false,
                         showgrid: false,
                         mirror: true,
